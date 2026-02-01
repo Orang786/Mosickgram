@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chatTitle: document.getElementById('chat-title'),
         online: document.getElementById('online-counter'),
         chanList: document.getElementById('channels-list'),
-        dmsList: document.getElementById('dms-list'), // НОВЫЙ
+        dmsList: document.getElementById('dms-list'),
         msgs: document.getElementById('messages-container'),
         
         input: document.getElementById('message-input'),
@@ -93,6 +93,19 @@ document.addEventListener('DOMContentLoaded', () => {
     socket.on('update-user', u => { currentUser = u; updateUI(u); });
     socket.on('update-online', c => { if(els.online) els.online.innerText = `(${c} online)`; });
 
+    // --- SIDEBAR TABS ---
+    function switchSidebarView(view) {
+        // Кнопки
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`tab-btn-${view}`).classList.add('active');
+        
+        // Списки
+        document.getElementById('channels-view').classList.add('hidden');
+        document.getElementById('dms-view').classList.add('hidden');
+        
+        document.getElementById(`${view}-view`).classList.remove('hidden');
+    }
+
     // --- CHANNELS & DMs ---
     function createChannelPrompt() {
         const name = prompt("Название канала:");
@@ -115,17 +128,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Отрисовка личных сообщений
     socket.on('update-dms', (dms) => {
         els.dmsList.innerHTML = '';
         dms.forEach(username => {
-            // Формируем ID комнаты для проверки активного класса
             const participants = [currentUser.username, username].sort();
             const dmId = `dm_${participants[0]}_${participants[1]}`;
             
             const div = document.createElement('div');
             div.className = `chat-item ${dmId === currentChannelId ? 'active' : ''}`;
-            div.id = `dm-${username}`; // Уникальный ID DOM-элемента
+            div.id = `dm-${username}`;
             div.onclick = () => startDM(username);
             
             div.innerHTML = `
@@ -136,13 +147,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Начать или перейти в ЛС
     function startDM(targetUsername) {
         socket.emit('start-dm', targetUsername);
+        // Автоматически переключаем вкладку на ЛС
+        switchSidebarView('dms');
     }
     
-    // Сервер говорит: "зайди в эту комнату ЛС"
     socket.on('force-join-dm', (data) => {
+        switchSidebarView('dms');
         switchChannel(data.dmId, data.target);
     });
 
@@ -154,12 +166,8 @@ document.addEventListener('DOMContentLoaded', () => {
         els.welcome.classList.add('hidden');
         if(window.innerWidth <= 768) els.sidebar.classList.remove('open');
         
-        // Обновляем визуальное выделение
         document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
-        // Пытаемся найти элемент в каналах или в ЛС
-        const activeItem = document.getElementById(`chan-${id}`) || 
-                           document.getElementById(`dm-${name}`); 
-                           // Note: name here might differ for DMs, logic simplified
+        const activeItem = document.getElementById(`chan-${id}`) || document.getElementById(`dm-${name}`); 
         if (activeItem) activeItem.classList.add('active');
         
         socket.emit('join-channel', id);
@@ -196,10 +204,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderMessage(msg, playSound = true) {
         if(document.getElementById(`msg-${msg.id}`)) return;
-        
         const div = document.createElement('div');
         div.id = `msg-${msg.id}`;
-        
         if(msg.type === 'system') {
             div.className = 'message system-msg';
             div.innerText = msg.text;
@@ -207,23 +213,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const isMe = currentUser && msg.username === currentUser.username;
             div.className = `message ${isMe ? 'my-msg' : 'other-msg'}`;
             div.oncontextmenu = (e) => showCtx(e, msg, isMe, currentUser.isAdmin);
-
             let replyHtml = msg.replyTo ? `<div class="reply-quote">${msg.replyTo.username}: ${msg.replyTo.text}</div>` : '';
             let badges = '';
             if(msg.isAdmin) badges += ' <span style="color:#ff7675">[A]</span>';
             if(msg.isNitro) badges += ' <span style="color:#ffeaa7">★</span>';
-            
-            let content = msg.image 
-                ? `<img src="${msg.image}" class="chat-image" onclick="window.open(this.src)">` 
-                : `<div class="text">${escapeHtml(msg.text)}</div>`;
-                
+            let content = msg.image ? `<img src="${msg.image}" class="chat-image" onclick="window.open(this.src)">` : `<div class="text">${escapeHtml(msg.text)}</div>`;
             if(msg.isEdited) content += `<span class="edited-mark">(изм.)</span>`;
-
-            div.innerHTML = `
-                <div class="meta"><span style="color:${msg.userColor}">${msg.username}</span>${badges}</div>
-                ${replyHtml} ${content}
-            `;
-            
+            div.innerHTML = `<div class="meta"><span style="color:${msg.userColor}">${msg.username}</span>${badges}</div>${replyHtml} ${content}`;
             if(!isMe && playSound) notificationSound.play().catch(()=>{});
         }
         els.msgs.appendChild(div);
@@ -290,17 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (u.isNitro) roles += '<span class="badge nitro">NITRO</span>';
             if (u.isBanned) roles += '<span class="badge banned">BANNED</span>';
             if (!roles) roles = '<span style="color:#555">-</span>';
-            tr.innerHTML = `
-                <td><span class="status-dot ${u.isOnline ? 'online' : 'offline'}"></span> <b>${escapeHtml(u.username)}</b></td>
-                <td>${u.isOnline ? '<span style="color:#00b894">Online</span>' : 'Offline'}</td>
-                <td>${roles}</td>
-                <td>${u.joinedAt || '-'}</td>
-                <td>
-                    <button class="act-btn btn-ban" onclick="adminAction('${u._id}', 'ban')">${u.isBanned ? 'Разбанить' : 'Бан'}</button>
-                    <button class="act-btn btn-promote" onclick="adminAction('${u._id}', 'promote')">${u.isAdmin ? 'Снять Adm' : 'Дать Adm'}</button>
-                    <button class="act-btn" style="background:#ffeaa7" onclick="adminAction('${u._id}', 'nitro')">Nitro</button>
-                </td>
-            `;
+            tr.innerHTML = `<td><span class="status-dot ${u.isOnline ? 'online' : 'offline'}"></span> <b>${escapeHtml(u.username)}</b></td><td>${u.isOnline ? '<span style="color:#00b894">Online</span>' : 'Offline'}</td><td>${roles}</td><td>${u.joinedAt || '-'}</td><td><button class="act-btn btn-ban" onclick="adminAction('${u._id}', 'ban')">${u.isBanned ? 'Разбанить' : 'Бан'}</button><button class="act-btn btn-promote" onclick="adminAction('${u._id}', 'promote')">${u.isAdmin ? 'Снять Adm' : 'Дать Adm'}</button><button class="act-btn" style="background:#ffeaa7" onclick="adminAction('${u._id}', 'nitro')">Nitro</button></td>`;
             els.usersList.appendChild(tr);
         });
     });
@@ -310,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     socket.on('admin-action-success', () => socket.emit('admin-get-data'));
 
-    // --- CONTEXT MENU ---
+    // --- MENU & UTILS ---
     document.onclick = (e) => { if(contextMenu && !e.target.closest('.context-menu')) contextMenu.remove(); };
     function showCtx(e, msg, isMe, isAdmin) {
         e.preventDefault();
@@ -320,11 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
         contextMenu.style.top = e.clientY + 'px';
         contextMenu.style.left = e.clientX + 'px';
         
-        // Кнопка Написать в ЛС
-        if (msg.username !== currentUser.username) {
-            addCtxItem('💬 Написать лично', () => startDM(msg.username));
-        }
-
+        if (msg.username !== currentUser.username) addCtxItem('💬 Написать лично', () => startDM(msg.username));
         addCtxItem('Ответить', () => startReply(msg));
         if(isMe) addCtxItem('Изменить', () => startEdit(msg));
         if(isMe || isAdmin) addCtxItem('Удалить', () => { if(confirm('Удалить?')) socket.emit('delete-message', msg.id); }, true);
@@ -337,7 +319,6 @@ document.addEventListener('DOMContentLoaded', () => {
         i.innerText = text; i.onclick = cb; contextMenu.appendChild(i);
     }
 
-    // --- ACTIONS ---
     function startReply(msg) { replyToMessage = { username: msg.username, text: msg.text || 'Медиа' }; editingMessageId = null; els.replyBar.classList.remove('hidden'); els.replyInfo.innerText = `В ответ ${msg.username}`; els.input.focus(); }
     function startEdit(msg) { editingMessageId = msg.id; replyToMessage = null; els.replyBar.classList.remove('hidden'); els.replyInfo.innerText = "Редактирование"; els.input.value = msg.text; els.input.focus(); }
     function cancelReply() { replyToMessage = null; editingMessageId = null; els.replyBar.classList.add('hidden'); els.input.value = ''; }
@@ -378,4 +359,5 @@ document.addEventListener('DOMContentLoaded', () => {
     window.cancelReply = cancelReply;
     window.toggleSidebar = toggleSidebar;
     window.sendMessage = sendMessage;
+    window.switchSidebarView = switchSidebarView;
 });
