@@ -12,7 +12,7 @@ let typingTimeout = null;
 const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2346/2346-preview.mp3');
 notificationSound.volume = 0.5;
 
-// DOM
+// DOM ELEMENTS
 const els = {
     login: document.getElementById('login-screen'),
     userInput: document.getElementById('username-input'),
@@ -42,7 +42,10 @@ const els = {
     pinnedBar: document.getElementById('pinned-bar'),
     pinnedText: document.getElementById('pinned-text'),
     
-    adminModal: document.getElementById('admin-modal')
+    adminModal: document.getElementById('admin-modal'),
+    sidebar: document.querySelector('.sidebar'),
+    welcome: document.getElementById('welcome-screen'),
+    emojiPicker: document.getElementById('emoji-picker')
 };
 
 // --- AUTH ---
@@ -67,6 +70,9 @@ socket.on('login-success', user => {
     els.login.classList.add('hidden');
     updateUI(user);
     if(user.isAdmin) els.adminBtn.classList.remove('hidden');
+    
+    // При входе показываем заглушку, пока не выберут чат
+    els.welcome.classList.remove('hidden');
 });
 
 function updateUI(user) {
@@ -111,6 +117,13 @@ function switchChannel(id) {
     if(id === currentChannelId) return;
     currentChannelId = id;
     els.msgs.innerHTML = '';
+    
+    // Скрываем приветствие, показываем чат
+    els.welcome.classList.add('hidden');
+    
+    // На мобильном скрываем меню
+    if(window.innerWidth <= 768) els.sidebar.classList.remove('open');
+    
     socket.emit('join-channel', id);
 }
 
@@ -154,7 +167,6 @@ function renderMessage(msg, playSound = true) {
     } else {
         const isMe = currentUser && msg.username === currentUser.username;
         div.className = `message ${isMe ? 'my-msg' : 'other-msg'}`;
-        
         div.oncontextmenu = (e) => showCtx(e, msg, isMe, currentUser.isAdmin);
 
         let replyHtml = msg.replyTo ? `<div class="reply-quote">${msg.replyTo.username}: ${msg.replyTo.text}</div>` : '';
@@ -191,7 +203,7 @@ socket.on('message-updated', d => {
 });
 socket.on('message-deleted', id => { const el = document.getElementById(`msg-${id}`); if(el) el.remove(); });
 
-// --- PINNED MESSAGES ---
+// --- PINNED ---
 socket.on('update-pinned', msg => {
     if(msg) {
         els.pinnedBar.classList.remove('hidden');
@@ -200,17 +212,26 @@ socket.on('update-pinned', msg => {
         els.pinnedBar.classList.add('hidden');
     }
 });
-function unpinMessage() { // Кнопка крестик на плашке (только для админа сработает на сервере)
-    if(currentUser.isAdmin && confirm('Открепить?')) socket.emit('unpin-message');
-}
+function unpinMessage() { if(currentUser.isAdmin && confirm('Открепить?')) socket.emit('unpin-message'); }
 
-// --- CONTEXT MENU ---
-document.onclick = () => { if(contextMenu) contextMenu.remove(); };
+// --- EMOJI ---
+function toggleEmoji() { els.emojiPicker.classList.toggle('hidden'); }
+document.querySelector('emoji-picker').addEventListener('emoji-click', event => {
+    els.input.value += event.detail.unicode;
+    els.input.focus();
+});
+document.addEventListener('click', (e) => {
+    const isBtn = e.target.innerText === '😃' || e.target.closest('.attach-btn');
+    const isPkr = e.target.tagName === 'EMOJI-PICKER';
+    if (!isBtn && !isPkr && !els.emojiPicker.classList.contains('hidden')) els.emojiPicker.classList.add('hidden');
+});
+
+// --- MENU & UTILS ---
+document.onclick = (e) => { if(contextMenu && !e.target.closest('.context-menu')) contextMenu.remove(); };
 
 function showCtx(e, msg, isMe, isAdmin) {
     e.preventDefault();
     if(contextMenu) contextMenu.remove();
-    
     contextMenu = document.createElement('div');
     contextMenu.className = 'context-menu';
     contextMenu.style.top = e.clientY + 'px';
@@ -219,79 +240,50 @@ function showCtx(e, msg, isMe, isAdmin) {
     addCtxItem('Ответить', () => startReply(msg));
     if(isMe) addCtxItem('Изменить', () => startEdit(msg));
     if(isMe || isAdmin) addCtxItem('Удалить', () => { if(confirm('Удалить?')) socket.emit('delete-message', msg.id); }, true);
-    
-    // Пин только для админа
     if(isAdmin) addCtxItem('📌 Закрепить', () => socket.emit('pin-message', msg.id));
-
     document.body.appendChild(contextMenu);
 }
-
 function addCtxItem(text, cb, isDel=false) {
     const i = document.createElement('div');
     i.className = 'context-menu-item' + (isDel ? ' delete' : '');
-    i.innerText = text;
-    i.onclick = cb;
-    contextMenu.appendChild(i);
+    i.innerText = text; i.onclick = cb; contextMenu.appendChild(i);
 }
 
-// --- UTILS ---
 function startReply(msg) {
     replyToMessage = { username: msg.username, text: msg.text || 'Медиа' };
     editingMessageId = null;
-    els.replyBar.classList.remove('hidden');
-    els.replyInfo.innerText = `В ответ ${msg.username}`;
-    els.input.focus();
+    els.replyBar.classList.remove('hidden'); els.replyInfo.innerText = `В ответ ${msg.username}`; els.input.focus();
 }
 function startEdit(msg) {
-    editingMessageId = msg.id;
-    replyToMessage = null;
-    els.replyBar.classList.remove('hidden');
-    els.replyInfo.innerText = "Редактирование";
-    els.input.value = msg.text;
-    els.input.focus();
+    editingMessageId = msg.id; replyToMessage = null;
+    els.replyBar.classList.remove('hidden'); els.replyInfo.innerText = "Редактирование"; els.input.value = msg.text; els.input.focus();
 }
 function cancelReply() {
-    replyToMessage = null; editingMessageId = null;
-    els.replyBar.classList.add('hidden'); els.input.value = '';
+    replyToMessage = null; editingMessageId = null; els.replyBar.classList.add('hidden'); els.input.value = '';
 }
-window.cancelReply = cancelReply;
-window.unpinMessage = unpinMessage;
+function toggleSidebar() { els.sidebar.classList.toggle('open'); }
 
 socket.on('display-typing', u => {
-    els.typing.innerText = `${u} печатает...`;
-    els.typing.classList.remove('hidden');
-    clearTimeout(typingTimeout);
-    typingTimeout = setTimeout(() => els.typing.classList.add('hidden'), 2000);
+    els.typing.innerText = `${u} печатает...`; els.typing.classList.remove('hidden');
+    clearTimeout(typingTimeout); typingTimeout = setTimeout(() => els.typing.classList.add('hidden'), 2000);
 });
 
-// ACTIONS
 els.fileInput.onchange = function() {
     const f = this.files[0];
     if(f) {
         const r = new FileReader();
         r.onload = e => socket.emit('send-message', { text:'', image:e.target.result, channelId: currentChannelId });
         r.readAsDataURL(f);
-    }
-    this.value = '';
+    } this.value = '';
 }
-els.myAv.onclick = () => { const u = prompt("URL:"); if(u) socket.emit('change-avatar', u); };
 
+els.myAv.onclick = () => { const u = prompt("URL:"); if(u) socket.emit('change-avatar', u); };
 window.createChannelPrompt = createChannelPrompt;
 window.buyNitro = () => { if(confirm('Купить Nitro?')) socket.emit('buy-nitro'); };
 window.toggleAdmin = () => els.adminModal.classList.toggle('hidden');
 window.adminGetStars = () => { socket.emit('admin-give-stars'); alert('+1000'); };
 window.adminClearChat = () => { if(confirm('Очистить?')) socket.emit('admin-clear-chat'); };
-
-// === МОБИЛЬНОЕ МЕНЮ ===
-const sidebar = document.querySelector('.sidebar');
-
-function toggleSidebar() {
-    sidebar.classList.toggle('open');
-}
-
-// Закрываем меню, если кликнули по каналу (на мобиле)
-document.getElementById('channels-list').addEventListener('click', () => {
-    if (window.innerWidth <= 768) {
-        sidebar.classList.remove('open');
-    }
-});
+window.toggleEmoji = toggleEmoji;
+window.unpinMessage = unpinMessage;
+window.cancelReply = cancelReply;
+window.toggleSidebar = toggleSidebar;
