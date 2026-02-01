@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
         myUser: document.getElementById('my-username'),
         myBal: document.getElementById('my-balance'),
         myAv: document.getElementById('my-avatar'),
+        nitroColor: document.getElementById('nitro-color-picker'),
         adminBtn: document.getElementById('admin-btn'),
         
         chatTitle: document.getElementById('chat-title'),
@@ -49,7 +50,10 @@ document.addEventListener('DOMContentLoaded', () => {
         emojiPicker: document.getElementById('emoji-picker'),
         
         adminPanel: document.getElementById('admin-panel'),
-        usersList: document.getElementById('admin-users-list')
+        usersList: document.getElementById('admin-users-list'),
+        
+        payModal: document.getElementById('payment-modal'),
+        nitroModal: document.getElementById('nitro-modal')
     };
 
     // --- AUTH ---
@@ -78,8 +82,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function updateUI(user) {
+        currentUser = user; // Обновляем глобального юзера
         els.myUser.innerText = user.username + (user.isAdmin ? ' (A)' : '');
         els.myBal.innerText = `★ ${user.stars}`;
+        
+        // Цвет ника
+        if (user.customColor) {
+            els.myUser.style.color = user.customColor;
+        } else if (user.isNitro) {
+            els.myUser.style.color = '#a29bfe';
+        } else {
+            els.myUser.style.color = '#fff';
+        }
+
         if(user.avatarUrl) {
             els.myAv.innerHTML = `<img src="${user.avatarUrl}">`;
             els.myAv.style.background = 'transparent';
@@ -87,22 +102,66 @@ document.addEventListener('DOMContentLoaded', () => {
             els.myAv.innerText = user.username[0].toUpperCase();
             els.myAv.style.background = user.color || '#555';
         }
-        if(user.isNitro) els.myUser.style.color = '#a29bfe';
+        
+        // Показываем пикер цвета для Нитро
+        if(user.isNitro) {
+            els.nitroColor.classList.remove('hidden');
+            els.nitroColor.value = user.customColor || '#ffffff';
+        }
     }
 
     socket.on('update-user', u => { currentUser = u; updateUI(u); });
     socket.on('update-online', c => { if(els.online) els.online.innerText = `(${c} online)`; });
 
+    // --- PAYMENT & NITRO ---
+    function openPaymentModal() { els.payModal.classList.remove('hidden'); }
+    function openNitroModal() { els.nitroModal.classList.remove('hidden'); }
+    function closeModals() { 
+        els.payModal.classList.add('hidden'); 
+        els.nitroModal.classList.add('hidden'); 
+    }
+    
+    // Пополнение
+    window.topUp = function(amount) {
+        // Симуляция задержки банка
+        const btn = event.target;
+        const oldText = btn.innerText;
+        btn.innerText = "Обработка...";
+        setTimeout(() => {
+            socket.emit('top-up-balance', amount);
+            btn.innerText = oldText;
+            alert("Оплата прошла успешно!");
+            closeModals();
+        }, 1000);
+    };
+
+    // Покупка Нитро
+    window.buyNitroAction = function() {
+        if (currentUser.isNitro) return alert("У вас уже есть Nitro!");
+        if (currentUser.stars < 500) {
+            if(confirm("Не хватает звезд! Пополнить баланс?")) {
+                closeModals();
+                openPaymentModal();
+            }
+            return;
+        }
+        socket.emit('buy-nitro');
+        closeModals();
+    };
+
+    socket.on('payment-error', msg => alert(msg));
+
+    // Смена цвета ника
+    els.nitroColor.addEventListener('change', (e) => {
+        socket.emit('change-name-color', e.target.value);
+    });
+
     // --- SIDEBAR TABS ---
     function switchSidebarView(view) {
-        // Кнопки
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(`tab-btn-${view}`).classList.add('active');
-        
-        // Списки
         document.getElementById('channels-view').classList.add('hidden');
         document.getElementById('dms-view').classList.add('hidden');
-        
         document.getElementById(`${view}-view`).classList.remove('hidden');
     }
 
@@ -120,10 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
             div.className = `chat-item ${id === currentChannelId ? 'active' : ''}`;
             div.id = `chan-${id}`;
             div.onclick = () => switchChannel(id, c.name);
-            div.innerHTML = `
-                <div class="avatar" style="font-size:0.8rem; background:#333">${c.name[0]}</div>
-                <div class="chat-info"><h4>${c.name}</h4></div>
-            `;
+            div.innerHTML = `<div class="avatar" style="font-size:0.8rem; background:#333">${c.name[0]}</div><div class="chat-info"><h4>${c.name}</h4></div>`;
             els.chanList.appendChild(div);
         });
     });
@@ -133,23 +189,17 @@ document.addEventListener('DOMContentLoaded', () => {
         dms.forEach(username => {
             const participants = [currentUser.username, username].sort();
             const dmId = `dm_${participants[0]}_${participants[1]}`;
-            
             const div = document.createElement('div');
             div.className = `chat-item ${dmId === currentChannelId ? 'active' : ''}`;
             div.id = `dm-${username}`;
             div.onclick = () => startDM(username);
-            
-            div.innerHTML = `
-                <div class="avatar" style="font-size:0.8rem; background: var(--accent-color)">${username[0].toUpperCase()}</div>
-                <div class="chat-info"><h4>${username}</h4><p>Личный чат</p></div>
-            `;
+            div.innerHTML = `<div class="avatar" style="font-size:0.8rem; background: var(--accent-color)">${username[0].toUpperCase()}</div><div class="chat-info"><h4>${username}</h4><p>Личный чат</p></div>`;
             els.dmsList.appendChild(div);
         });
     });
 
     function startDM(targetUsername) {
         socket.emit('start-dm', targetUsername);
-        // Автоматически переключаем вкладку на ЛС
         switchSidebarView('dms');
     }
     
@@ -165,11 +215,9 @@ document.addEventListener('DOMContentLoaded', () => {
         els.msgs.innerHTML = '';
         els.welcome.classList.add('hidden');
         if(window.innerWidth <= 768) els.sidebar.classList.remove('open');
-        
         document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
         const activeItem = document.getElementById(`chan-${id}`) || document.getElementById(`dm-${name}`); 
         if (activeItem) activeItem.classList.add('active');
-        
         socket.emit('join-channel', id);
     }
 
@@ -219,7 +267,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if(msg.isNitro) badges += ' <span style="color:#ffeaa7">★</span>';
             let content = msg.image ? `<img src="${msg.image}" class="chat-image" onclick="window.open(this.src)">` : `<div class="text">${escapeHtml(msg.text)}</div>`;
             if(msg.isEdited) content += `<span class="edited-mark">(изм.)</span>`;
-            div.innerHTML = `<div class="meta"><span style="color:${msg.userColor}">${msg.username}</span>${badges}</div>${replyHtml} ${content}`;
+            
+            // Цвет ника в сообщении
+            const nameColor = msg.userColor || '#fff';
+            
+            div.innerHTML = `<div class="meta"><span style="color:${nameColor}">${msg.username}</span>${badges}</div>${replyHtml} ${content}`;
             if(!isMe && playSound) notificationSound.play().catch(()=>{});
         }
         els.msgs.appendChild(div);
@@ -286,7 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (u.isNitro) roles += '<span class="badge nitro">NITRO</span>';
             if (u.isBanned) roles += '<span class="badge banned">BANNED</span>';
             if (!roles) roles = '<span style="color:#555">-</span>';
-            tr.innerHTML = `<td><span class="status-dot ${u.isOnline ? 'online' : 'offline'}"></span> <b>${escapeHtml(u.username)}</b></td><td>${u.isOnline ? '<span style="color:#00b894">Online</span>' : 'Offline'}</td><td>${roles}</td><td>${u.joinedAt || '-'}</td><td><button class="act-btn btn-ban" onclick="adminAction('${u._id}', 'ban')">${u.isBanned ? 'Разбанить' : 'Бан'}</button><button class="act-btn btn-promote" onclick="adminAction('${u._id}', 'promote')">${u.isAdmin ? 'Снять Adm' : 'Дать Adm'}</button><button class="act-btn" style="background:#ffeaa7" onclick="adminAction('${u._id}', 'nitro')">Nitro</button></td>`;
+            tr.innerHTML = `<td><span class="status-dot ${u.isOnline ? 'online' : 'offline'}"></span> <b>${escapeHtml(u.username)}</b></td><td>${u.isOnline ? '<span style="color:#00b894">Online</span>' : 'Offline'}</td><td>${roles}</td><td><button class="act-btn btn-ban" onclick="adminAction('${u._id}', 'ban')">${u.isBanned ? 'Разбанить' : 'Бан'}</button><button class="act-btn btn-promote" onclick="adminAction('${u._id}', 'promote')">${u.isAdmin ? 'Снять Adm' : 'Дать Adm'}</button><button class="act-btn" style="background:#ffeaa7" onclick="adminAction('${u._id}', 'nitro')">Nitro</button></td>`;
             els.usersList.appendChild(tr);
         });
     });
@@ -305,7 +357,6 @@ document.addEventListener('DOMContentLoaded', () => {
         contextMenu.className = 'context-menu';
         contextMenu.style.top = e.clientY + 'px';
         contextMenu.style.left = e.clientX + 'px';
-        
         if (msg.username !== currentUser.username) addCtxItem('💬 Написать лично', () => startDM(msg.username));
         addCtxItem('Ответить', () => startReply(msg));
         if(isMe) addCtxItem('Изменить', () => startEdit(msg));
@@ -318,17 +369,20 @@ document.addEventListener('DOMContentLoaded', () => {
         i.className = 'context-menu-item' + (isDel ? ' delete' : '');
         i.innerText = text; i.onclick = cb; contextMenu.appendChild(i);
     }
-
     function startReply(msg) { replyToMessage = { username: msg.username, text: msg.text || 'Медиа' }; editingMessageId = null; els.replyBar.classList.remove('hidden'); els.replyInfo.innerText = `В ответ ${msg.username}`; els.input.focus(); }
     function startEdit(msg) { editingMessageId = msg.id; replyToMessage = null; els.replyBar.classList.remove('hidden'); els.replyInfo.innerText = "Редактирование"; els.input.value = msg.text; els.input.focus(); }
     function cancelReply() { replyToMessage = null; editingMessageId = null; els.replyBar.classList.add('hidden'); els.input.value = ''; }
     function toggleSidebar() { els.sidebar.classList.toggle('open'); }
-    
     socket.on('display-typing', u => { els.typing.innerText = `${u} печатает...`; els.typing.classList.remove('hidden'); clearTimeout(typingTimeout); typingTimeout = setTimeout(() => els.typing.classList.add('hidden'), 2000); });
 
+    // FILES
     els.fileInput.onchange = function() {
         const f = this.files[0];
         if(f) {
+            // Проверка лимита на клиенте (1Мб обычный, 10Мб Нитро)
+            const limit = currentUser.isNitro ? 10 * 1024 * 1024 : 1 * 1024 * 1024;
+            if (f.size > limit) return alert(currentUser.isNitro ? "Слишком большой файл (Макс 10Мб)" : "Купите Nitro для загрузки файлов > 1Мб!");
+            
             const r = new FileReader();
             r.onload = e => socket.emit('send-message', { text:'', image:e.target.result, channelId: currentChannelId });
             r.readAsDataURL(f);
@@ -360,4 +414,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.toggleSidebar = toggleSidebar;
     window.sendMessage = sendMessage;
     window.switchSidebarView = switchSidebarView;
+    window.openPaymentModal = openPaymentModal;
+    window.openNitroModal = openNitroModal;
+    window.closeModals = closeModals;
+    window.buyNitroAction = buyNitroAction;
 });
