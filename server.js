@@ -17,8 +17,13 @@ app.use(express.static(path.join(__dirname, 'public')));
 const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://OrangLaut:HWyWKxTP8pZGwzWT@mosickgram.jpqqle6.mongodb.net/?appName=Mosickgram';
 
 mongoose.connect(MONGO_URI)
-    .then(() => console.log('✅ MongoDB Connected'))
-    .catch(err => console.error('❌ MongoDB Error:', err));
+    .then(() => {
+        console.log('✅ MongoDB Connected');
+        initDB(); 
+    })
+    .catch(err => {
+        console.error('❌ MongoDB Connection Error:', err);
+    });
 
 // === СХЕМЫ БАЗЫ ДАННЫХ ===
 const UserSchema = new mongoose.Schema({
@@ -61,12 +66,16 @@ const Channel = mongoose.model('Channel', ChannelSchema);
 
 // Создаем дефолтный канал при старте, если нет
 async function initDB() {
-    const globalChan = await Channel.findOne({ channelId: 'global' });
-    if (!globalChan) {
-        await new Channel({ channelId: 'global', name: 'Global Chat', desc: 'Главный сервер' }).save();
+    try {
+        const globalChan = await Channel.findOne({ channelId: 'global' });
+        if (!globalChan) {
+            await new Channel({ channelId: 'global', name: 'Global Chat', desc: 'Главный сервер' }).save();
+            console.log('✅ Global channel created');
+        }
+    } catch (e) {
+        console.error('Error initDB:', e);
     }
 }
-initDB();
 
 let activeSockets = {}; // socket.id -> username (Кэш онлайна)
 
@@ -326,4 +335,5 @@ async function handleCommand(socket, user, text) {
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => console.log('Server running on port ' + PORT));
+
 
