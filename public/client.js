@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         input: document.getElementById('message-input'),
         fileInput: document.getElementById('file-input'),
+        avatarInput: document.getElementById('avatar-input'), // <-- НОВЫЙ ЭЛЕМЕНТ
         typing: document.getElementById('typing-indicator'),
         
         replyBar: document.getElementById('reply-bar'),
@@ -47,7 +48,6 @@ document.addEventListener('DOMContentLoaded', () => {
         welcome: document.getElementById('welcome-screen'),
         emojiPicker: document.getElementById('emoji-picker'),
         
-        // Admin
         adminPanel: document.getElementById('admin-panel'),
         usersList: document.getElementById('admin-users-list')
     };
@@ -224,7 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isBtn && !isPkr && els.emojiPicker && !els.emojiPicker.classList.contains('hidden')) els.emojiPicker.classList.add('hidden');
     });
 
-    // --- ADMIN PANEL LOGIC ---
+    // --- ADMIN ---
     function toggleAdmin() {
         if (!currentUser || !currentUser.isAdmin) return alert("Доступ запрещен!");
         els.adminPanel.classList.toggle('hidden');
@@ -269,7 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     socket.on('admin-action-success', () => socket.emit('admin-get-data'));
 
-    // --- MENU & UTILS ---
+    // --- CONTEXT MENU ---
     document.onclick = (e) => { if(contextMenu && !e.target.closest('.context-menu')) contextMenu.remove(); };
     function showCtx(e, msg, isMe, isAdmin) {
         e.preventDefault();
@@ -289,15 +289,53 @@ document.addEventListener('DOMContentLoaded', () => {
         i.className = 'context-menu-item' + (isDel ? ' delete' : '');
         i.innerText = text; i.onclick = cb; contextMenu.appendChild(i);
     }
+
+    // --- ACTIONS ---
     function startReply(msg) { replyToMessage = { username: msg.username, text: msg.text || 'Медиа' }; editingMessageId = null; els.replyBar.classList.remove('hidden'); els.replyInfo.innerText = `В ответ ${msg.username}`; els.input.focus(); }
     function startEdit(msg) { editingMessageId = msg.id; replyToMessage = null; els.replyBar.classList.remove('hidden'); els.replyInfo.innerText = "Редактирование"; els.input.value = msg.text; els.input.focus(); }
     function cancelReply() { replyToMessage = null; editingMessageId = null; els.replyBar.classList.add('hidden'); els.input.value = ''; }
     function toggleSidebar() { els.sidebar.classList.toggle('open'); }
+    
     socket.on('display-typing', u => { els.typing.innerText = `${u} печатает...`; els.typing.classList.remove('hidden'); clearTimeout(typingTimeout); typingTimeout = setTimeout(() => els.typing.classList.add('hidden'), 2000); });
-    els.fileInput.onchange = function() { const f = this.files[0]; if(f) { const r = new FileReader(); r.onload = e => socket.emit('send-message', { text:'', image:e.target.result, channelId: currentChannelId }); r.readAsDataURL(f); } this.value = ''; }
-    els.myAv.onclick = () => { const u = prompt("URL:"); if(u) socket.emit('change-avatar', u); };
 
-    // --- WINDOW EXPORTS ---
+    // FILES (CHAT IMAGES)
+    els.fileInput.onchange = function() {
+        const f = this.files[0];
+        if(f) {
+            const r = new FileReader();
+            r.onload = e => socket.emit('send-message', { text:'', image:e.target.result, channelId: currentChannelId });
+            r.readAsDataURL(f);
+        } this.value = '';
+    }
+
+    // === НОВАЯ ЛОГИКА АВАТАРОК ===
+    // Клик по аватару -> открываем скрытый инпут
+    els.myAv.onclick = () => {
+        els.avatarInput.click();
+    };
+
+    // Когда файл выбран
+    els.avatarInput.onchange = function() {
+        const file = this.files[0];
+        if (!file) return;
+
+        // Проверка размера (1Мб), чтобы база не переполнилась
+        if (file.size > 1024 * 1024) {
+            alert("Файл слишком большой! Максимальный размер 1Мб.");
+            this.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            // Отправляем Base64 строку на сервер
+            socket.emit('change-avatar', e.target.result);
+        };
+        reader.readAsDataURL(file);
+        this.value = ''; // Сброс
+    };
+
+    // EXPORTS
     window.submitAuth = submitAuth;
     window.toggleAuthMode = toggleAuthMode;
     window.createChannelPrompt = createChannelPrompt;
