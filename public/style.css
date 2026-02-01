@@ -10,29 +10,24 @@ body { background-color: var(--bg-color); color: var(--text-primary); height: 10
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
 
-/* === AUTH === */
+/* AUTH */
 .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 2000; display: flex; justify-content: center; align-items: center; }
 .login-box { background: #1e1e24; padding: 40px; border-radius: 20px; text-align: center; border: 1px solid #333; width: 350px; }
 .login-box input { padding: 12px; border-radius: 8px; border: 1px solid #333; width: 100%; margin: 8px 0; background: #0f0f13; color: white; }
 .login-box button { width: 100%; padding: 12px; margin-top: 15px; background: var(--accent-color); border: none; color: white; cursor: pointer; border-radius: 8px; font-weight: bold; }
-.login-box a { color: var(--accent-color); text-decoration: none; font-weight: bold; cursor: pointer; }
 #error-msg { color: #ff7675; font-size: 0.9em; min-height: 20px; }
-@keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } 100% { transform: translateX(0); } }
 
-/* === SIDEBAR === */
+/* SIDEBAR */
 .sidebar { width: 320px; background: var(--sidebar-bg); border-right: 1px solid #2d2d33; display: flex; flex-direction: column; z-index: 100; }
 .header { padding: 20px; border-bottom: 1px solid #2d2d33; }
 .user-profile { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
 .avatar { width: 50px; height: 50px; border-radius: 50%; background: #555; display: flex; align-items: center; justify-content: center; font-weight: bold; position: relative; cursor: pointer; overflow: hidden; }
 .avatar img { width: 100%; height: 100%; object-fit: cover; }
 .nitro-badge::after { content: '★'; position: absolute; bottom: 2px; right: 2px; background: var(--accent-color); border-radius: 50%; width: 18px; height: 18px; font-size: 12px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--sidebar-bg); }
-
-/* ВКЛАДКИ */
 .sidebar-tabs { display: flex; padding: 10px 15px; gap: 10px; border-bottom: 1px solid #2d2d33; }
-.tab-btn { flex: 1; padding: 8px; background: transparent; border: 1px solid #444; color: #aaa; border-radius: 8px; cursor: pointer; transition: 0.2s; font-size: 0.9rem; }
+.tab-btn { flex: 1; padding: 8px; background: transparent; border: 1px solid #444; color: #aaa; border-radius: 8px; cursor: pointer; transition: 0.2s; }
 .tab-btn:hover { border-color: #666; color: #fff; }
 .tab-btn.active { background: var(--accent-color); border-color: var(--accent-color); color: white; }
-
 .create-chan-btn { width: 100%; margin-top: 10px; background: #2d3436; color: #aaa; border: 1px dashed #555; padding: 8px; cursor: pointer; border-radius: 8px; }
 .create-chan-btn:hover { background: #333; color: white; border-color: #777; }
 .sidebar-scroll { flex: 1; overflow-y: auto; padding: 10px; }
@@ -42,9 +37,11 @@ body { background-color: var(--bg-color); color: var(--text-primary); height: 10
 .chat-item.active { background: rgba(255,255,255,0.08); border-left: 3px solid var(--accent-color); }
 .chat-info h4 { margin-bottom: 2px; font-size: 0.95rem; }
 .chat-info p { color: var(--text-secondary); font-size: 0.8rem; }
-.nitro-btn { width: 100%; padding: 10px; background: linear-gradient(45deg, #6c5ce7, #a29bfe); border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold; }
+.nitro-btn { padding: 10px; background: linear-gradient(45deg, #6c5ce7, #a29bfe); border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold; }
+.wallet-btn { background: #2d3436; border: 1px solid #444; border-radius: 8px; cursor: pointer; font-size: 1.2rem; width: 50px; }
+.wallet-btn:hover { background: #333; }
 
-/* === CHAT === */
+/* CHAT AREA */
 .main-chat { flex: 1; display: flex; flex-direction: column; background: #0f0f13; position: relative; }
 .top-bar { padding: 0 20px; background: rgba(24,24,29,0.95); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2d2d33; height: 60px; }
 .admin-btn { background: #d63031; border: none; padding: 8px 12px; border-radius: 8px; color: white; cursor: pointer; }
@@ -70,7 +67,7 @@ body { background-color: var(--bg-color); color: var(--text-primary); height: 10
 .send-btn { color: var(--accent-color); }
 emoji-picker { position: absolute; bottom: 80px; right: 20px; z-index: 100; --background: #1e1e24; --border-color: #333; }
 
-/* === MOBILE === */
+/* MOBILE */
 .mobile-menu-btn { display: none; background: none; border: none; color: white; font-size: 1.5rem; margin-right: 15px; cursor: pointer; }
 @media (max-width: 768px) {
     .mobile-menu-btn { display: block; }
@@ -83,15 +80,28 @@ emoji-picker { position: absolute; bottom: 80px; right: 20px; z-index: 100; --ba
 .context-menu-item { padding: 10px; cursor: pointer; color: white; }
 .context-menu-item:hover { background: #444; }
 
-/* === ADMIN === */
+/* MODALS & PAYMENT */
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 3000; }
+.modal-content { background: #2d3436; padding: 30px; border-radius: 15px; width: 350px; text-align: center; }
+.modal-header { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
+.modal-header span { cursor: pointer; color: #777; }
+
+/* Credit Card UI */
+.credit-card { background: linear-gradient(135deg, #2c3e50, #000000); padding: 20px; border-radius: 12px; margin-bottom: 20px; color: white; text-align: left; box-shadow: 0 5px 15px rgba(0,0,0,0.3); border: 1px solid #444; }
+.card-chip { width: 40px; height: 30px; background: linear-gradient(135deg, #f1c40f, #e67e22); border-radius: 5px; margin-bottom: 10px; }
+.card-input { width: 100%; background: transparent; border: none; border-bottom: 1px solid #777; color: white; font-family: monospace; font-size: 1.1rem; margin-bottom: 15px; padding: 5px; }
+.card-input:focus { outline: none; border-color: #fff; }
+.card-row { display: flex; gap: 10px; }
+.payment-options button { display: block; width: 100%; margin: 5px 0; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; background: #00b894; color: white; }
+.payment-options button:hover { opacity: 0.9; }
+
+/* INPUT COLOR */
+#nitro-color-picker { margin-top: 5px; cursor: pointer; width: 30px; height: 30px; border: none; background: transparent; padding: 0; }
+
+/* ADMIN PANEL */
 .admin-panel-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 5000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
 .admin-dashboard { width: 90%; height: 90%; background: #1e1e24; border-radius: 15px; display: flex; overflow: hidden; border: 1px solid #444; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
 .admin-sidebar { width: 250px; background: #15151a; padding: 20px; border-right: 1px solid #333; display: flex; flex-direction: column; }
-.admin-sidebar h3 { color: var(--accent-color); margin-bottom: 30px; letter-spacing: 1px; }
-.admin-menu-item { padding: 15px; cursor: pointer; color: #aaa; border-radius: 8px; margin-bottom: 5px; transition: 0.2s; }
-.admin-menu-item:hover { background: #2d2d33; color: white; }
-.admin-menu-item.active { background: var(--accent-color); color: white; }
-.admin-menu-item.close { margin-top: auto; color: #ff7675; }
 .admin-content { flex: 1; padding: 30px; overflow-y: auto; background: #1e1e24; }
 .user-table-wrapper { overflow-x: auto; }
 .user-table { width: 100%; border-collapse: collapse; min-width: 600px; }
@@ -104,9 +114,3 @@ emoji-picker { position: absolute; bottom: 80px; right: 20px; z-index: 100; --ba
 .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
 .online { background: #00b894; }
 .offline { background: #636e72; }
-.act-btn { padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px; font-size: 0.8rem; }
-.btn-ban { background: #fab1a0; color: #2d3436; }
-.btn-promote { background: #74b9ff; color: #2d3436; }
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
-.stat-box { background: #2d2d33; padding: 20px; border-radius: 10px; text-align: center; }
-.stat-box h3 { font-size: 2.5rem; color: var(--accent-color); margin-bottom: 5px; }
