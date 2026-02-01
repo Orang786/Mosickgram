@@ -22,7 +22,7 @@ mongoose.connect(MONGO_URI)
     })
     .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
-// --- СХЕМЫ ---
+// --- SCHEMAS ---
 const UserSchema = new mongoose.Schema({
     username: { type: String, unique: true, required: true },
     password: { type: String, required: true },
@@ -71,18 +71,63 @@ async function initDB() {
     } catch (e) { console.error(e); }
 }
 
-let activeSockets = {}; // socket.id -> username
+let activeSockets = {}; 
 
-// Функция подсчета уникальных онлайн юзеров
 function getOnlineCount() {
     const uniqueUsers = new Set(Object.values(activeSockets));
     return uniqueUsers.size;
 }
 
 io.on('connection', (socket) => {
-
-    // При подключении сразу шлем текущий онлайн (даже до логина)
     socket.emit('update-online', getOnlineCount());
+
+    // === ФУНКЦИЯ ВХОДА В ЧАТ (Определена ЗДЕСЬ, чтобы быть видимой) ===
+    async function joinChannel(socket, channelId) {
+        // Проверка доступа к ЛС
+        if (channelId.startsWith('dm_')) {
+            const username = activeSockets[socket.id];
+            if (!username || !channelId.includes(username)) {
+                return socket.emit('message', { type: 'system', text: '⛔ Нет доступа' });
+            }
+        }
+
+        socket.rooms.forEach(room => { if(room !== socket.id) socket.leave(room); });
+        socket.join(channelId);
+        
+        const msgs = await Message.find({ channelId }).sort({ timestamp: 1 }).limit(100);
+        socket.emit('load-messages', msgs.map(m => formatMsg(m)));
+        socket.emit('set-active-channel', channelId);
+
+        if (!channelId.startsWith('dm_')) {
+            const channel = await Channel.findOne({ channelId });
+            if(channel && channel.pinnedMessageId) {
+                const pinnedMsg = await Message.findById(channel.pinnedMessageId);
+                if(pinnedMsg) socket.emit('update-pinned', formatMsg(pinnedMsg));
+            } else {
+                socket.emit('update-pinned', null);
+            }
+        } else {
+            socket.emit('update-pinned', null);
+        }
+    }
+
+    async function loginUser(socket, user) {
+        activeSockets[socket.id] = user.username;
+        socket.emit('login-success', user);
+        
+        const channels = await Channel.find();
+        const channelsData = {};
+        channels.forEach(c => channelsData[c.channelId] = { name: c.name, desc: c.desc });
+        socket.emit('update-channels', channelsData);
+        socket.emit('update-dms', user.openDMs || []);
+
+        // Теперь joinChannel видна!
+        await joinChannel(socket, 'global');
+        
+        io.emit('update-online', getOnlineCount());
+    }
+
+    // === SOCKET EVENTS ===
 
     socket.on('auth', async (data) => {
         const { username, password, type } = data;
@@ -117,21 +162,7 @@ io.on('connection', (socket) => {
         } catch (e) { console.error(e); }
     });
 
-    async function loginUser(socket, user) {
-        activeSockets[socket.id] = user.username;
-        socket.emit('login-success', user);
-        
-        const channels = await Channel.find();
-        const channelsData = {};
-        channels.forEach(c => channelsData[c.channelId] = { name: c.name, desc: c.desc });
-        socket.emit('update-channels', channelsData);
-        socket.emit('update-dms', user.openDMs || []);
-
-        joinChannel(socket, 'global');
-        
-        // Обновляем онлайн для всех
-        io.emit('update-online', getOnlineCount());
-    }
+    socket.on('join-channel', (id) => joinChannel(socket, id));
 
     socket.on('create-channel', async (name) => {
         const username = activeSockets[socket.id];
@@ -168,41 +199,6 @@ io.on('connection', (socket) => {
         const dmId = `dm_${participants[0]}_${participants[1]}`;
         socket.emit('force-join-dm', { dmId, target: targetUsername });
     });
-
-    socket.on('join-channel', async (id) => {
-        const username = activeSockets[socket.id];
-        if(!username) return;
-
-        if (id.startsWith('dm_')) {
-            if (!id.includes(username)) return socket.emit('message', { type: 'system', text: '⛔ Нет доступа' });
-        }
-
-        joinChannel(socket, id);
-    });
-
-    async function joinChannel(socket, channelId) {
-        socket.rooms.forEach(room => { if(room !== socket.id) socket.leave(room); });
-        socket.join(channelId);
-        
-        const msgs = await Message.find({ channelId }).sort({ timestamp: 1 }).limit(100);
-        socket.emit('load-messages', msgs.map(m => formatMsg(m)));
-        socket.emit('set-active-channel', channelId);
-
-        // Отправляем количество людей в ЭТОМ канале
-        // (Опционально, но мы используем общий онлайн, так надежнее пока)
-        
-        if (!channelId.startsWith('dm_')) {
-            const channel = await Channel.findOne({ channelId });
-            if(channel && channel.pinnedMessageId) {
-                const pinnedMsg = await Message.findById(channel.pinnedMessageId);
-                if(pinnedMsg) socket.emit('update-pinned', formatMsg(pinnedMsg));
-            } else {
-                socket.emit('update-pinned', null);
-            }
-        } else {
-            socket.emit('update-pinned', null);
-        }
-    }
 
     socket.on('send-message', async (data) => {
         const username = activeSockets[socket.id];
