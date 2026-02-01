@@ -1,4 +1,4 @@
-require('dotenv').config(); // Для локальной разработки
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -324,4 +324,5 @@ async function handleCommand(socket, user, text) {
 }
 
 const PORT = process.env.PORT || 3000;
+
 server.listen(PORT, () => console.log('Server running on port ' + PORT));
