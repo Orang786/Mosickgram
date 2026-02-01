@@ -31,7 +31,8 @@
         <div class="sidebar">
             <div class="header">
                 <div class="user-profile">
-                    <div class="avatar" id="my-avatar">?</div>
+                    <!-- Аватар теперь кликабельный через JS -->
+                    <div class="avatar" id="my-avatar" title="Нажми, чтобы сменить фото">?</div>
                     <div class="info">
                         <div id="my-username" style="font-weight: bold;">Гость</div>
                         <div class="balance" id="my-balance">★ 0</div>
@@ -84,7 +85,11 @@
 
             <div class="input-area">
                 <emoji-picker class="dark hidden" id="emoji-picker"></emoji-picker>
+                
+                <!-- Инпуты для файлов -->
                 <input type="file" id="file-input" accept="image/*" style="display: none;">
+                <input type="file" id="avatar-input" accept="image/*" style="display: none;"> <!-- НОВЫЙ ИНПУТ ДЛЯ АВАТАРА -->
+
                 <button class="attach-btn" onclick="document.getElementById('file-input').click()" title="Отправить фото">📎</button>
                 <button class="attach-btn" onclick="toggleEmoji()" title="Смайлики">😃</button>
                 <input type="text" class="message-input" id="message-input" placeholder="Написать сообщение...">
@@ -95,7 +100,7 @@
         </div>
     </div>
 
-    <!-- ПОЛНОЦЕННАЯ АДМИН ПАНЕЛЬ -->
+    <!-- АДМИН ПАНЕЛЬ -->
     <div class="admin-panel-overlay hidden" id="admin-panel">
         <div class="admin-dashboard">
             <div class="admin-sidebar">
@@ -104,9 +109,7 @@
                 <div class="admin-menu-item" onclick="switchAdminTab('stats')">📊 Статистика</div>
                 <div class="admin-menu-item close" onclick="toggleAdmin()">⬅ Выход</div>
             </div>
-            
             <div class="admin-content">
-                <!-- Вкладка пользователей -->
                 <div id="tab-users" class="admin-tab">
                     <h2>Управление пользователями</h2>
                     <div class="user-table-wrapper">
@@ -120,33 +123,20 @@
                                     <th>Действия</th>
                                 </tr>
                             </thead>
-                            <tbody id="admin-users-list">
-                                <!-- Сюда JS загрузит людей -->
-                            </tbody>
+                            <tbody id="admin-users-list"></tbody>
                         </table>
                     </div>
                 </div>
-
-                <!-- Вкладка статистики -->
                 <div id="tab-stats" class="admin-tab hidden">
                     <h2>Статистика сервера</h2>
                     <div class="stats-grid">
-                        <div class="stat-box">
-                            <h3 id="stat-total-users">0</h3>
-                            <p>Всего юзеров</p>
-                        </div>
-                        <div class="stat-box">
-                            <h3 id="stat-online">0</h3>
-                            <p>Сейчас онлайн</p>
-                        </div>
-                        <div class="stat-box">
-                            <h3 id="stat-msgs">0</h3>
-                            <p>Сообщений в базе</p>
-                        </div>
+                        <div class="stat-box"><h3 id="stat-total-users">0</h3><p>Юзеров</p></div>
+                        <div class="stat-box"><h3 id="stat-online">0</h3><p>Онлайн</p></div>
+                        <div class="stat-box"><h3 id="stat-msgs">0</h3><p>Сообщений</p></div>
                     </div>
                     <div style="margin-top: 20px;">
                          <button style="background: #0984e3; padding: 10px 20px; border: none; color: white; cursor: pointer; margin-right: 10px;" onclick="adminGetStars()">+1000 ★ (Себе)</button>
-                         <button style="background: #d63031; padding: 10px 20px; border: none; color: white; cursor: pointer;" onclick="adminClearChat()">⚠ Очистить всю базу сообщений</button>
+                         <button style="background: #d63031; padding: 10px 20px; border: none; color: white; cursor: pointer;" onclick="adminClearChat()">⚠ Очистить базу</button>
                     </div>
                 </div>
             </div>
