@@ -8,7 +8,6 @@ const bcrypt = require('bcryptjs');
 
 const app = express();
 const server = http.createServer(app);
-// Лимит 10Мб важен для загрузки картинок
 const io = new Server(server, { maxHttpBufferSize: 1e7 });
 
 app.use(express.static(path.join(__dirname, 'public')));
@@ -21,8 +20,9 @@ mongoose.connect(MONGO_URI)
         console.log('✅ MongoDB Connected');
         initDB();
     })
-    .catch(err => console.error('❌ MongoDB Error:', err));
+    .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
+// --- СХЕМЫ ---
 const UserSchema = new mongoose.Schema({
     username: { type: String, unique: true, required: true },
     password: { type: String, required: true },
@@ -32,7 +32,9 @@ const UserSchema = new mongoose.Schema({
     isBanned: { type: Boolean, default: false },
     color: String,
     avatarUrl: String,
-    joinedAt: { type: Date, default: Date.now }
+    joinedAt: { type: Date, default: Date.now },
+    // НОВОЕ: Список открытых диалогов (массив никнеймов собеседников)
+    openDMs: [{ type: String }] 
 });
 
 const MessageSchema = new mongoose.Schema({
@@ -64,13 +66,17 @@ const Channel = mongoose.model('Channel', ChannelSchema);
 async function initDB() {
     try {
         const globalChan = await Channel.findOne({ channelId: 'global' });
-        if (!globalChan) await new Channel({ channelId: 'global', name: 'Global Chat', desc: 'Главный сервер' }).save();
-    } catch (e) {}
+        if (!globalChan) {
+            await new Channel({ channelId: 'global', name: 'Global Chat', desc: 'Главный сервер' }).save();
+        }
+    } catch (e) { console.error(e); }
 }
 
-let activeSockets = {};
+let activeSockets = {}; // socket.id -> username
 
 io.on('connection', (socket) => {
+
+    // === АВТОРИЗАЦИЯ ===
     socket.on('auth', async (data) => {
         const { username, password, type } = data;
         if (!username || !password) return socket.emit('auth-error', 'Заполните поля');
@@ -83,17 +89,22 @@ io.on('connection', (socket) => {
 
                 const hashedPassword = await bcrypt.hash(password, 10);
                 const newUser = new User({
-                    username, password: hashedPassword,
-                    color: '#' + Math.floor(Math.random()*16777215).toString(16)
+                    username,
+                    password: hashedPassword,
+                    color: '#' + Math.floor(Math.random()*16777215).toString(16),
+                    openDMs: []
                 });
                 await newUser.save();
                 loginUser(socket, newUser);
+
             } else {
                 const user = await User.findOne({ username });
                 if (!user) return socket.emit('auth-error', 'Пользователь не найден');
+                
                 const isMatch = await bcrypt.compare(password, user.password);
                 if (!isMatch) return socket.emit('auth-error', 'Неверный пароль');
                 if (user.isBanned) return socket.emit('auth-error', '⛔ ВЫ ЗАБАНЕНЫ!');
+
                 loginUser(socket, user);
             }
         } catch (e) { console.error(e); }
@@ -103,45 +114,101 @@ io.on('connection', (socket) => {
         activeSockets[socket.id] = user.username;
         socket.emit('login-success', user);
         
+        // 1. Отправляем Каналы
         const channels = await Channel.find();
         const channelsData = {};
         channels.forEach(c => channelsData[c.channelId] = { name: c.name, desc: c.desc });
         socket.emit('update-channels', channelsData);
 
+        // 2. Отправляем ЛС (Direct Messages)
+        // Берем список собеседников из базы и отправляем клиенту
+        socket.emit('update-dms', user.openDMs || []);
+
         joinChannel(socket, 'global');
         io.emit('update-online', Object.keys(activeSockets).length);
     }
 
+    // === КАНАЛЫ (ПУБЛИЧНЫЕ) ===
     socket.on('create-channel', async (name) => {
         const username = activeSockets[socket.id];
         if (!username) return;
         const id = 'chan-' + Date.now();
         await new Channel({ channelId: id, name, desc: `Создал: ${username}` }).save();
+        
         const channels = await Channel.find();
         const channelsData = {};
         channels.forEach(c => channelsData[c.channelId] = { name: c.name, desc: c.desc });
         io.emit('update-channels', channelsData);
     });
 
-    socket.on('join-channel', (id) => joinChannel(socket, id));
+    // === ЛИЧНЫЕ СООБЩЕНИЯ (НОВОЕ) ===
+    socket.on('start-dm', async (targetUsername) => {
+        const myName = activeSockets[socket.id];
+        if (!myName || myName === targetUsername) return;
 
-    async function joinChannel(socket, channelId) {
-        socket.rooms.forEach(room => { if(room !== socket.id) socket.leave(room); });
-        socket.join(channelId);
+        // Проверяем, существует ли цель
+        const targetUser = await User.findOne({ username: targetUsername });
+        if (!targetUser) return;
+
+        // Добавляем друг друга в списки openDMs (если еще нет)
+        await User.updateOne({ username: myName }, { $addToSet: { openDMs: targetUsername } });
+        await User.updateOne({ username: targetUsername }, { $addToSet: { openDMs: myName } });
+
+        // Обновляем список ЛС у меня
+        const me = await User.findOne({ username: myName });
+        socket.emit('update-dms', me.openDMs);
+
+        // Обновляем список ЛС у собеседника (если он онлайн)
+        for (let [sockId, name] of Object.entries(activeSockets)) {
+            if (name === targetUsername) {
+                const him = await User.findOne({ username: targetUsername });
+                io.to(sockId).emit('update-dms', him.openDMs);
+            }
+        }
+
+        // Формируем ID комнаты: 'dm_user1_user2' (сортируем по алфавиту, чтобы ID был одинаковым для обоих)
+        const participants = [myName, targetUsername].sort();
+        const dmId = `dm_${participants[0]}_${participants[1]}`;
         
-        const msgs = await Message.find({ channelId }).sort({ timestamp: 1 }).limit(100);
-        socket.emit('load-messages', msgs.map(m => formatMsg(m)));
-        socket.emit('set-active-channel', channelId);
+        // Сразу переключаем инициатора на этот чат
+        socket.emit('force-join-dm', { dmId, target: targetUsername });
+    });
 
-        const channel = await Channel.findOne({ channelId });
-        if(channel && channel.pinnedMessageId) {
-            const pinnedMsg = await Message.findById(channel.pinnedMessageId);
-            if(pinnedMsg) socket.emit('update-pinned', formatMsg(pinnedMsg));
+    // === ВХОД В ЧАТ (ОБЩИЙ ИЛИ ЛС) ===
+    socket.on('join-channel', async (id) => {
+        const username = activeSockets[socket.id];
+        if(!username) return;
+
+        // ПРОВЕРКА ДОСТУПА К ЛС
+        if (id.startsWith('dm_')) {
+            // ID выглядит как dm_UserA_UserB. Проверяем, есть ли мое имя в ID.
+            if (!id.includes(username)) {
+                return socket.emit('message', { type: 'system', text: '⛔ Нет доступа к этому чату' });
+            }
+        }
+
+        socket.rooms.forEach(room => { if(room !== socket.id) socket.leave(room); });
+        socket.join(id);
+        
+        const msgs = await Message.find({ channelId: id }).sort({ timestamp: 1 }).limit(100);
+        socket.emit('load-messages', msgs.map(m => formatMsg(m)));
+        socket.emit('set-active-channel', id);
+
+        // Закрепы только для публичных каналов
+        if (!id.startsWith('dm_')) {
+            const channel = await Channel.findOne({ channelId: id });
+            if(channel && channel.pinnedMessageId) {
+                const pinnedMsg = await Message.findById(channel.pinnedMessageId);
+                if(pinnedMsg) socket.emit('update-pinned', formatMsg(pinnedMsg));
+            } else {
+                socket.emit('update-pinned', null);
+            }
         } else {
             socket.emit('update-pinned', null);
         }
-    }
+    });
 
+    // === СООБЩЕНИЯ ===
     socket.on('send-message', async (data) => {
         const username = activeSockets[socket.id];
         if (!username) return;
@@ -174,11 +241,6 @@ io.on('connection', (socket) => {
         if (msg.username === username || user.isAdmin) {
             await Message.findByIdAndDelete(id);
             io.emit('message-deleted', id);
-            const chan = await Channel.findOne({ channelId: msg.channelId });
-            if(chan && chan.pinnedMessageId === id) {
-                chan.pinnedMessageId = null; await chan.save();
-                io.to(msg.channelId).emit('update-pinned', null);
-            }
         }
     });
 
@@ -196,8 +258,10 @@ io.on('connection', (socket) => {
     socket.on('pin-message', async (id) => {
         const username = activeSockets[socket.id];
         const user = await User.findOne({username});
-        if(!user || !user.isAdmin) return;
+        // Пин только если админ и это не ЛС
         const msg = await Message.findById(id);
+        if(!user || !user.isAdmin || msg.channelId.startsWith('dm_')) return;
+        
         if(msg) {
             await Channel.findOneAndUpdate({ channelId: msg.channelId }, { pinnedMessageId: id });
             io.to(msg.channelId).emit('update-pinned', formatMsg(msg));
@@ -209,21 +273,23 @@ io.on('connection', (socket) => {
          const user = await User.findOne({username});
          if(!user || !user.isAdmin) return;
          const room = Array.from(socket.rooms).find(r => r !== socket.id);
-         if(room) {
+         if(room && !room.startsWith('dm_')) {
              await Channel.findOneAndUpdate({ channelId: room }, { pinnedMessageId: null });
              io.to(room).emit('update-pinned', null);
          }
     });
 
+    // === USER TOOLS ===
     socket.on('typing', () => {
         const u = activeSockets[socket.id];
+        // Нужно отправлять тайпинг только в комнату, где сидит юзер, но для простоты шлем всем в комнате
+        // (Socket.io сам разрулит broadcast.to(room), но тут нужно знать комнату. 
+        // Пока оставим глобально или можно допилить)
         if(u) socket.broadcast.emit('display-typing', u);
     });
 
-    // === ИЗМЕНЕНИЕ АВАТАРА (Теперь принимает DataURI) ===
     socket.on('change-avatar', async (dataUri) => {
         const username = activeSockets[socket.id];
-        // Сохраняем строку картинки в базу
         await User.findOneAndUpdate({ username }, { avatarUrl: dataUri });
         const updated = await User.findOne({ username });
         socket.emit('update-user', updated);
@@ -239,10 +305,12 @@ io.on('connection', (socket) => {
         }
     });
 
+    // === ADMIN ===
     socket.on('admin-get-data', async () => {
         const username = activeSockets[socket.id];
         const user = await User.findOne({ username });
         if (!user || !user.isAdmin) return;
+
         const allUsers = await User.find({}, 'username stars isAdmin isBanned isNitro joinedAt');
         const stats = {
             totalUsers: allUsers.length,
