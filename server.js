@@ -8,7 +8,8 @@ const bcrypt = require('bcryptjs');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { maxHttpBufferSize: 1e7 });
+// Ставим максимальный лимит сокета 15Мб, чтобы Nitro могли кидать 10Мб
+const io = new Server(server, { maxHttpBufferSize: 1.5e7 });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -22,7 +23,7 @@ mongoose.connect(MONGO_URI)
     })
     .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
-// --- SCHEMAS ---
+// --- СХЕМЫ ---
 const UserSchema = new mongoose.Schema({
     username: { type: String, unique: true, required: true },
     password: { type: String, required: true },
@@ -30,7 +31,8 @@ const UserSchema = new mongoose.Schema({
     isAdmin: { type: Boolean, default: false },
     isNitro: { type: Boolean, default: false },
     isBanned: { type: Boolean, default: false },
-    color: String,
+    color: String, // Базовый рандомный цвет
+    customColor: { type: String, default: null }, // Кастомный цвет Nitro
     avatarUrl: String,
     joinedAt: { type: Date, default: Date.now },
     openDMs: [{ type: String }] 
@@ -81,9 +83,7 @@ function getOnlineCount() {
 io.on('connection', (socket) => {
     socket.emit('update-online', getOnlineCount());
 
-    // === ФУНКЦИЯ ВХОДА В ЧАТ (Определена ЗДЕСЬ, чтобы быть видимой) ===
     async function joinChannel(socket, channelId) {
-        // Проверка доступа к ЛС
         if (channelId.startsWith('dm_')) {
             const username = activeSockets[socket.id];
             if (!username || !channelId.includes(username)) {
@@ -121,13 +121,11 @@ io.on('connection', (socket) => {
         socket.emit('update-channels', channelsData);
         socket.emit('update-dms', user.openDMs || []);
 
-        // Теперь joinChannel видна!
         await joinChannel(socket, 'global');
-        
         io.emit('update-online', getOnlineCount());
     }
 
-    // === SOCKET EVENTS ===
+    // --- SOCKET EVENTS ---
 
     socket.on('auth', async (data) => {
         const { username, password, type } = data;
@@ -137,8 +135,6 @@ io.on('connection', (socket) => {
             if (type === 'register') {
                 const exists = await User.findOne({ username });
                 if (exists) return socket.emit('auth-error', 'Ник занят');
-                if (username.length > 15) return socket.emit('auth-error', 'Длинный ник');
-
                 const hashedPassword = await bcrypt.hash(password, 10);
                 const newUser = new User({
                     username,
@@ -148,15 +144,12 @@ io.on('connection', (socket) => {
                 });
                 await newUser.save();
                 loginUser(socket, newUser);
-
             } else {
                 const user = await User.findOne({ username });
                 if (!user) return socket.emit('auth-error', 'Пользователь не найден');
-                
                 const isMatch = await bcrypt.compare(password, user.password);
                 if (!isMatch) return socket.emit('auth-error', 'Неверный пароль');
                 if (user.isBanned) return socket.emit('auth-error', '⛔ ВЫ ЗАБАНЕНЫ!');
-
                 loginUser(socket, user);
             }
         } catch (e) { console.error(e); }
@@ -169,7 +162,6 @@ io.on('connection', (socket) => {
         if (!username) return;
         const id = 'chan-' + Date.now();
         await new Channel({ channelId: id, name, desc: `Создал: ${username}` }).save();
-        
         const channels = await Channel.find();
         const channelsData = {};
         channels.forEach(c => channelsData[c.channelId] = { name: c.name, desc: c.desc });
@@ -194,7 +186,6 @@ io.on('connection', (socket) => {
                 io.to(sockId).emit('update-dms', him.openDMs);
             }
         }
-
         const participants = [myName, targetUsername].sort();
         const dmId = `dm_${participants[0]}_${participants[1]}`;
         socket.emit('force-join-dm', { dmId, target: targetUsername });
@@ -205,7 +196,17 @@ io.on('connection', (socket) => {
         if (!username) return;
         const user = await User.findOne({ username });
         if (user.isBanned) return;
-        if (data.text && data.text.startsWith('/')) return;
+        
+        // ПРОВЕРКА ЛИМИТА РАЗМЕРА ФАЙЛА
+        // Обычные: ~1MB (строка base64 длиннее байтов), Nitro: ~10MB
+        if (data.image) {
+            const sizeInBytes = Buffer.byteLength(data.image, 'utf8');
+            const limit = user.isNitro ? 15 * 1024 * 1024 : 1.5 * 1024 * 1024; // 15MB или 1.5MB (с запасом на base64)
+            
+            if (sizeInBytes > limit) {
+                return socket.emit('message', { type: 'system', text: `⚠ Файл слишком большой! Лимит: ${user.isNitro ? '10MB' : '1MB (Купите Nitro)'}` });
+            }
+        }
 
         const newMsg = new Message({
             channelId: data.channelId || 'global',
@@ -216,7 +217,8 @@ io.on('connection', (socket) => {
             replyTo: data.replyTo,
             isNitro: user.isNitro,
             isAdmin: user.isAdmin,
-            userColor: user.color,
+            // Используем кастомный цвет, если есть, иначе базовый
+            userColor: user.customColor || user.color,
             avatarUrl: user.avatarUrl
         });
 
@@ -224,6 +226,7 @@ io.on('connection', (socket) => {
         io.to(savedMsg.channelId).emit('message', formatMsg(savedMsg));
     });
 
+    // ... edit/delete/pin logic (same as before) ...
     socket.on('delete-message', async (id) => {
         const username = activeSockets[socket.id];
         const msg = await Message.findById(id);
@@ -232,7 +235,6 @@ io.on('connection', (socket) => {
         if (msg.username === username || user.isAdmin) {
             await Message.findByIdAndDelete(id);
             io.emit('message-deleted', id);
-            
             const chan = await Channel.findOne({ channelId: msg.channelId });
             if(chan && chan.pinnedMessageId === id) {
                 chan.pinnedMessageId = null; await chan.save();
@@ -245,8 +247,7 @@ io.on('connection', (socket) => {
         const username = activeSockets[socket.id];
         const msg = await Message.findById(data.id);
         if(msg && msg.username === username) {
-            msg.text = data.newText;
-            msg.isEdited = true;
+            msg.text = data.newText; msg.isEdited = true;
             await msg.save();
             io.emit('message-updated', { id: msg._id, newText: msg.text });
         }
@@ -257,7 +258,6 @@ io.on('connection', (socket) => {
         const user = await User.findOne({username});
         const msg = await Message.findById(id);
         if(!user || !user.isAdmin || !msg || msg.channelId.startsWith('dm_')) return;
-        
         await Channel.findOneAndUpdate({ channelId: msg.channelId }, { pinnedMessageId: id });
         io.to(msg.channelId).emit('update-pinned', formatMsg(msg));
     });
@@ -284,36 +284,57 @@ io.on('connection', (socket) => {
         const updated = await User.findOne({ username });
         socket.emit('update-user', updated);
     });
+
+    // === ФИНАНСЫ И NITRO ===
     
+    // Пополнение баланса (фейковое, но с логикой)
+    socket.on('top-up-balance', async (amount) => {
+        const username = activeSockets[socket.id];
+        const user = await User.findOne({ username });
+        if (user) {
+            user.stars += amount;
+            await user.save();
+            socket.emit('update-user', user);
+            socket.emit('message', { type: 'system', text: `💳 Баланс пополнен на ${amount} звезд!` });
+        }
+    });
+    
+    // Покупка Nitro
     socket.on('buy-nitro', async () => {
         const username = activeSockets[socket.id];
         const user = await User.findOne({ username });
         if(user.stars >= 500) {
-            user.stars -= 500; user.isNitro = true;
+            user.stars -= 500; 
+            user.isNitro = true;
             await user.save();
             socket.emit('update-user', user);
+            io.emit('message', { type: 'system', text: `✨ ${user.username} купил NITRO и стал крутым!` });
+        } else {
+            socket.emit('payment-error', 'Недостаточно звезд!');
         }
     });
 
-    // ADMIN
+    // Смена цвета ника (только Nitro)
+    socket.on('change-name-color', async (color) => {
+        const username = activeSockets[socket.id];
+        const user = await User.findOne({ username });
+        if (user && user.isNitro) {
+            user.customColor = color;
+            await user.save();
+            socket.emit('update-user', user);
+            socket.emit('message', { type: 'system', text: '🎨 Цвет ника обновлен!' });
+        }
+    });
+
+    // === ADMIN ===
     socket.on('admin-get-data', async () => {
         const username = activeSockets[socket.id];
         const user = await User.findOne({ username });
         if (!user || !user.isAdmin) return;
-
         const allUsers = await User.find({}, 'username stars isAdmin isBanned isNitro joinedAt');
-        const stats = {
-            totalUsers: allUsers.length,
-            totalMessages: await Message.countDocuments(),
-            onlineUsers: getOnlineCount()
-        };
+        const stats = { totalUsers: allUsers.length, totalMessages: await Message.countDocuments(), onlineUsers: getOnlineCount() };
         const usersList = allUsers.map(u => ({
-            _id: u._id,
-            username: u.username,
-            stars: u.stars,
-            isAdmin: u.isAdmin,
-            isBanned: u.isBanned,
-            isNitro: u.isNitro,
+            _id: u._id, username: u.username, stars: u.stars, isAdmin: u.isAdmin, isBanned: u.isBanned, isNitro: u.isNitro,
             isOnline: Object.values(activeSockets).includes(u.username),
             joinedAt: u.joinedAt ? u.joinedAt.toLocaleDateString() : '?'
         }));
@@ -337,11 +358,8 @@ io.on('connection', (socket) => {
                     }
                 }
             }
-        } else if (action === 'promote') {
-            targetUser.isAdmin = !targetUser.isAdmin;
-        } else if (action === 'nitro') {
-            targetUser.isNitro = !targetUser.isNitro;
-        }
+        } else if (action === 'promote') { targetUser.isAdmin = !targetUser.isAdmin; }
+        else if (action === 'nitro') { targetUser.isNitro = !targetUser.isNitro; }
         await targetUser.save();
         socket.emit('admin-action-success'); 
     });
@@ -349,19 +367,13 @@ io.on('connection', (socket) => {
     socket.on('admin-clear-chat', async () => {
          const username = activeSockets[socket.id];
          const user = await User.findOne({ username });
-         if(user.isAdmin) {
-             await Message.deleteMany({});
-             io.emit('clear-chat');
-         }
+         if(user.isAdmin) { await Message.deleteMany({}); io.emit('clear-chat'); }
     });
     
     socket.on('admin-give-stars', async () => {
         const username = activeSockets[socket.id];
         const user = await User.findOne({ username });
-        if(user.isAdmin) {
-            user.stars += 1000; await user.save();
-            socket.emit('update-user', user);
-        }
+        if(user.isAdmin) { user.stars += 1000; await user.save(); socket.emit('update-user', user); }
     });
 
     socket.on('disconnect', () => {
@@ -373,18 +385,8 @@ io.on('connection', (socket) => {
 function formatMsg(m) {
     if(!m) return null;
     return {
-        id: m._id.toString(),
-        channelId: m.channelId,
-        username: m.username,
-        type: m.type,
-        text: m.text,
-        image: m.image,
-        replyTo: m.replyTo,
-        isEdited: m.isEdited,
-        isNitro: m.isNitro,
-        isAdmin: m.isAdmin,
-        userColor: m.userColor,
-        avatarUrl: m.avatarUrl,
+        id: m._id.toString(), channelId: m.channelId, username: m.username, type: m.type, text: m.text, image: m.image, replyTo: m.replyTo,
+        isEdited: m.isEdited, isNitro: m.isNitro, isAdmin: m.isAdmin, userColor: m.userColor, avatarUrl: m.avatarUrl,
         time: m.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
     };
 }
