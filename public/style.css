@@ -1,19 +1,9 @@
 :root {
-    --bg-color: #0f0f13;
-    --sidebar-bg: #18181d;
-    --item-hover: #2b2b33;
-    --accent-color: #6c5ce7;
-    --text-primary: #ffffff;
-    --text-secondary: #a1a1aa;
-    --star-gold: #f1c40f;
-    --message-bg: #2b2b33;
+    --bg-color: #0f0f13; --sidebar-bg: #18181d; --item-hover: #2b2b33; --accent-color: #6c5ce7;
+    --text-primary: #ffffff; --text-secondary: #a1a1aa; --star-gold: #f1c40f; --message-bg: #2b2b33;
 }
-
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-
 body { background-color: var(--bg-color); color: var(--text-primary); height: 100vh; overflow: hidden; }
-
-/* === COMMON === */
 .hidden { display: none !important; }
 .app-container { display: flex; height: 100vh; position: relative; }
 ::-webkit-scrollbar { width: 6px; }
@@ -36,23 +26,25 @@ body { background-color: var(--bg-color); color: var(--text-primary); height: 10
 .avatar { width: 50px; height: 50px; border-radius: 50%; background: #555; display: flex; align-items: center; justify-content: center; font-weight: bold; position: relative; cursor: pointer; overflow: hidden; }
 .avatar img { width: 100%; height: 100%; object-fit: cover; }
 .nitro-badge::after { content: '★'; position: absolute; bottom: 2px; right: 2px; background: var(--accent-color); border-radius: 50%; width: 18px; height: 18px; font-size: 12px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--sidebar-bg); }
+
+/* ВКЛАДКИ */
+.sidebar-tabs { display: flex; padding: 10px 15px; gap: 10px; border-bottom: 1px solid #2d2d33; }
+.tab-btn { flex: 1; padding: 8px; background: transparent; border: 1px solid #444; color: #aaa; border-radius: 8px; cursor: pointer; transition: 0.2s; font-size: 0.9rem; }
+.tab-btn:hover { border-color: #666; color: #fff; }
+.tab-btn.active { background: var(--accent-color); border-color: var(--accent-color); color: white; }
+
 .create-chan-btn { width: 100%; margin-top: 10px; background: #2d3436; color: #aaa; border: 1px dashed #555; padding: 8px; cursor: pointer; border-radius: 8px; }
 .create-chan-btn:hover { background: #333; color: white; border-color: #777; }
-
-/* НОВОЕ: Скролл и заголовки в сайдбаре */
 .sidebar-scroll { flex: 1; overflow-y: auto; padding: 10px; }
-.section-label { font-size: 0.75rem; color: #666; font-weight: bold; margin-bottom: 5px; padding-left: 10px; margin-top: 10px; }
-
 .chat-list { display: flex; flex-direction: column; gap: 5px; }
 .chat-item { padding: 12px 15px; display: flex; gap: 15px; cursor: pointer; border-radius: 12px; align-items: center; }
 .chat-item:hover { background: rgba(255,255,255,0.05); }
 .chat-item.active { background: rgba(255,255,255,0.08); border-left: 3px solid var(--accent-color); }
 .chat-info h4 { margin-bottom: 2px; font-size: 0.95rem; }
 .chat-info p { color: var(--text-secondary); font-size: 0.8rem; }
-
 .nitro-btn { width: 100%; padding: 10px; background: linear-gradient(45deg, #6c5ce7, #a29bfe); border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold; }
 
-/* === CHAT AREA === */
+/* === CHAT === */
 .main-chat { flex: 1; display: flex; flex-direction: column; background: #0f0f13; position: relative; }
 .top-bar { padding: 0 20px; background: rgba(24,24,29,0.95); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2d2d33; height: 60px; }
 .admin-btn { background: #d63031; border: none; padding: 8px 12px; border-radius: 8px; color: white; cursor: pointer; }
@@ -63,8 +55,6 @@ body { background-color: var(--bg-color); color: var(--text-primary); height: 10
 .pin-text { font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #ddd; }
 .pin-close:hover { color: #fff; }
 .messages-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-
-/* === MESSAGES === */
 .message { padding: 10px 15px; border-radius: 12px; max-width: 60%; position: relative; word-wrap: break-word; }
 .message.my-msg { align-self: flex-end; background: var(--accent-color); border-bottom-right-radius: 2px; }
 .message.other-msg { align-self: flex-start; background: var(--message-bg); border-bottom-left-radius: 2px; }
@@ -72,8 +62,6 @@ body { background-color: var(--bg-color); color: var(--text-primary); height: 10
 .chat-image { max-width: 100%; border-radius: 10px; margin-top: 5px; cursor: pointer; }
 .reply-quote { border-left: 3px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.1); padding: 5px; margin-bottom: 5px; font-size: 0.85em; }
 .edited-mark { font-size: 0.7em; opacity: 0.6; margin-left: 5px; font-style: italic; }
-
-/* === INPUT === */
 .reply-bar { background: #1e1e24; padding: 8px 20px; border-top: 1px solid var(--accent-color); display: flex; justify-content: space-between; color: #ccc; }
 .input-area { padding: 15px; background: var(--sidebar-bg); display: flex; gap: 10px; align-items: center; position: relative; }
 .message-input { flex: 1; padding: 12px; border-radius: 12px; border: none; background: #0f0f13; color: white; outline: none; font-size: 1rem; }
