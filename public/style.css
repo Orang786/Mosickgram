@@ -13,7 +13,7 @@
 
 body { background-color: var(--bg-color); color: var(--text-primary); height: 100vh; overflow: hidden; }
 
-/* === INTERFACE === */
+/* === COMMON === */
 .hidden { display: none !important; }
 .app-container { display: flex; height: 100vh; position: relative; }
 ::-webkit-scrollbar { width: 6px; }
@@ -38,13 +38,21 @@ body { background-color: var(--bg-color); color: var(--text-primary); height: 10
 .nitro-badge::after { content: '★'; position: absolute; bottom: 2px; right: 2px; background: var(--accent-color); border-radius: 50%; width: 18px; height: 18px; font-size: 12px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--sidebar-bg); }
 .create-chan-btn { width: 100%; margin-top: 10px; background: #2d3436; color: #aaa; border: 1px dashed #555; padding: 8px; cursor: pointer; border-radius: 8px; }
 .create-chan-btn:hover { background: #333; color: white; border-color: #777; }
-.chat-list { flex: 1; padding: 10px; overflow-y: auto; }
-.chat-item { padding: 15px; display: flex; gap: 15px; cursor: pointer; border-radius: 12px; }
+
+/* НОВОЕ: Скролл и заголовки в сайдбаре */
+.sidebar-scroll { flex: 1; overflow-y: auto; padding: 10px; }
+.section-label { font-size: 0.75rem; color: #666; font-weight: bold; margin-bottom: 5px; padding-left: 10px; margin-top: 10px; }
+
+.chat-list { display: flex; flex-direction: column; gap: 5px; }
+.chat-item { padding: 12px 15px; display: flex; gap: 15px; cursor: pointer; border-radius: 12px; align-items: center; }
 .chat-item:hover { background: rgba(255,255,255,0.05); }
-.chat-item.active { background: rgba(255,255,255,0.05); border-left: 3px solid var(--accent-color); }
+.chat-item.active { background: rgba(255,255,255,0.08); border-left: 3px solid var(--accent-color); }
+.chat-info h4 { margin-bottom: 2px; font-size: 0.95rem; }
+.chat-info p { color: var(--text-secondary); font-size: 0.8rem; }
+
 .nitro-btn { width: 100%; padding: 10px; background: linear-gradient(45deg, #6c5ce7, #a29bfe); border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold; }
 
-/* === CHAT === */
+/* === CHAT AREA === */
 .main-chat { flex: 1; display: flex; flex-direction: column; background: #0f0f13; position: relative; }
 .top-bar { padding: 0 20px; background: rgba(24,24,29,0.95); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2d2d33; height: 60px; }
 .admin-btn { background: #d63031; border: none; padding: 8px 12px; border-radius: 8px; color: white; cursor: pointer; }
@@ -74,7 +82,7 @@ body { background-color: var(--bg-color); color: var(--text-primary); height: 10
 .send-btn { color: var(--accent-color); }
 emoji-picker { position: absolute; bottom: 80px; right: 20px; z-index: 100; --background: #1e1e24; --border-color: #333; }
 
-/* === MOBILE & MENU === */
+/* === MOBILE === */
 .mobile-menu-btn { display: none; background: none; border: none; color: white; font-size: 1.5rem; margin-right: 15px; cursor: pointer; }
 @media (max-width: 768px) {
     .mobile-menu-btn { display: block; }
@@ -87,7 +95,7 @@ emoji-picker { position: absolute; bottom: 80px; right: 20px; z-index: 100; --ba
 .context-menu-item { padding: 10px; cursor: pointer; color: white; }
 .context-menu-item:hover { background: #444; }
 
-/* === ADMIN PANEL (FULL) === */
+/* === ADMIN === */
 .admin-panel-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 5000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
 .admin-dashboard { width: 90%; height: 90%; background: #1e1e24; border-radius: 15px; display: flex; overflow: hidden; border: 1px solid #444; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
 .admin-sidebar { width: 250px; background: #15151a; padding: 20px; border-right: 1px solid #333; display: flex; flex-direction: column; }
@@ -96,14 +104,11 @@ emoji-picker { position: absolute; bottom: 80px; right: 20px; z-index: 100; --ba
 .admin-menu-item:hover { background: #2d2d33; color: white; }
 .admin-menu-item.active { background: var(--accent-color); color: white; }
 .admin-menu-item.close { margin-top: auto; color: #ff7675; }
-.admin-menu-item.close:hover { background: rgba(255, 118, 117, 0.1); }
 .admin-content { flex: 1; padding: 30px; overflow-y: auto; background: #1e1e24; }
-.admin-tab h2 { margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
 .user-table-wrapper { overflow-x: auto; }
 .user-table { width: 100%; border-collapse: collapse; min-width: 600px; }
 .user-table th { text-align: left; padding: 15px; background: #2b2b33; color: #ccc; }
 .user-table td { padding: 15px; border-bottom: 1px solid #333; color: #eee; }
-.user-table tr:hover { background: #25252b; }
 .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; margin-right: 5px; }
 .badge.admin { background: #ff7675; color: #2d3436; }
 .badge.nitro { background: #ffeaa7; color: #2d3436; }
@@ -113,9 +118,7 @@ emoji-picker { position: absolute; bottom: 80px; right: 20px; z-index: 100; --ba
 .offline { background: #636e72; }
 .act-btn { padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px; font-size: 0.8rem; }
 .btn-ban { background: #fab1a0; color: #2d3436; }
-.btn-ban:hover { background: #ff7675; }
 .btn-promote { background: #74b9ff; color: #2d3436; }
-.btn-promote:hover { background: #0984e3; }
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
 .stat-box { background: #2d2d33; padding: 20px; border-radius: 10px; text-align: center; }
 .stat-box h3 { font-size: 2.5rem; color: var(--accent-color); margin-bottom: 5px; }
