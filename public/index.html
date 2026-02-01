@@ -37,18 +37,29 @@
                         <div class="balance" id="my-balance">★ 0</div>
                     </div>
                 </div>
-                <button class="create-chan-btn" onclick="createChannelPrompt()">+ Создать канал</button>
             </div>
             
-            <!-- СПИСОК ЧАТОВ -->
-            <div class="sidebar-scroll">
-                <div class="section-label">КАНАЛЫ</div>
-                <div class="chat-list" id="channels-list"></div>
+            <!-- ВКЛАДКИ (TABS) -->
+            <div class="sidebar-tabs">
+                <button class="tab-btn active" id="tab-btn-channels" onclick="switchSidebarView('channels')">💬 Каналы</button>
+                <button class="tab-btn" id="tab-btn-dms" onclick="switchSidebarView('dms')">👤 Личные</button>
+            </div>
 
-                <div class="section-label" style="margin-top: 20px;">ЛИЧНЫЕ СООБЩЕНИЯ</div>
-                <div class="chat-list" id="dms-list">
-                    <!-- Сюда попадут личные чаты -->
+            <!-- СПИСКИ ЧАТОВ -->
+            <div class="sidebar-scroll">
+                
+                <!-- Каналы -->
+                <div id="channels-view">
+                    <div class="chat-list" id="channels-list"></div>
+                    <button class="create-chan-btn" onclick="createChannelPrompt()">+ Создать канал</button>
                 </div>
+
+                <!-- Личные сообщения -->
+                <div id="dms-view" class="hidden">
+                    <div class="chat-list" id="dms-list"></div>
+                    <p style="text-align: center; color: #555; margin-top: 20px; font-size: 0.8rem;">Нажмите на пользователя в чате,<br>чтобы написать лично.</p>
+                </div>
+
             </div>
              
              <div style="padding: 15px; border-top: 1px solid #333;">
@@ -80,7 +91,7 @@
                 <div class="welcome-content">
                     <div style="font-size: 4rem; margin-bottom: 20px;">👻</div>
                     <h2>Mosickgram</h2>
-                    <p>Выберите канал или начните личную переписку</p>
+                    <p>Выберите чат слева, чтобы начать общение</p>
                 </div>
             </div>
 
