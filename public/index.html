@@ -3,48 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TG Clone</title>
+    <title>Mosickgram</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Подключение библиотеки Эмодзи -->
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
 </head>
 <body>
+
+    <!-- ЭКРАН ВХОДА -->
     <div id="login-screen" class="login-overlay">
         <div class="login-box">
-            <h2 id="auth-title">Вход</h2>
-            <input type="text" id="username-input" placeholder="Никнейм">
+            <h2 id="auth-title">Mosickgram</h2>
+            <p style="color: #aaa; font-size: 0.9em; margin-bottom: 20px;">Добро пожаловать</p>
+            <input type="text" id="username-input" placeholder="Никнейм" maxlength="15">
             <input type="password" id="password-input" placeholder="Пароль">
             <div id="error-msg"></div>
             <button onclick="submitAuth()" id="submit-btn">Войти</button>
-            <p style="margin-top:10px; cursor:pointer; color:#777;" onclick="toggleAuthMode()" id="toggle-text">Создать аккаунт</p>
+            <p style="margin-top: 15px; font-size: 0.9em; color: #888;">
+                <span id="toggle-text">Нет аккаунта?</span> 
+                <a href="#" onclick="toggleAuthMode()">Создать</a>
+            </p>
         </div>
     </div>
 
     <div class="app-container">
+        <!-- САЙДБАР -->
         <div class="sidebar">
             <div class="header">
                 <div class="user-profile">
                     <div class="avatar" id="my-avatar">?</div>
                     <div class="info">
-                        <div id="my-username">Гость</div>
+                        <div id="my-username" style="font-weight: bold;">Гость</div>
                         <div class="balance" id="my-balance">★ 0</div>
                     </div>
                 </div>
-                <button class="create-chan-btn" onclick="createChannelPrompt()">+ Канал</button>
+                <button class="create-chan-btn" onclick="createChannelPrompt()">+ Создать канал</button>
             </div>
+            
             <div class="chat-list" id="channels-list"></div>
-            <div style="padding:10px;"><button class="nitro-btn" onclick="buyNitro()">NITRO (500★)</button></div>
+             
+             <div style="padding: 15px; border-top: 1px solid #333;">
+                <button class="nitro-btn" onclick="buyNitro()">NITRO (500★)</button>
+             </div>
         </div>
 
+        <!-- ОСНОВНОЙ ЧАТ -->
         <div class="main-chat">
             <div class="top-bar">
                 <button id="menu-btn" class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
-
                 <div class="chat-header-info">
-                    <h3 id="chat-title">Загрузка...</h3>
-                    <span id="online-counter" style="margin-left:10px; font-size:0.8em; color:#00b894;">(0)</span>
+                    <h3 id="chat-title">Mosickgram</h3>
+                    <span id="online-counter" style="color: #00b894; font-size: 0.8rem; margin-left: 10px;">(offline)</span>
                 </div>
                 <button id="admin-btn" class="admin-btn hidden" onclick="toggleAdmin()">⚙️</button>
             </div>
-            
+
             <!-- ЗАКРЕПЛЕННОЕ СООБЩЕНИЕ -->
             <div id="pinned-bar" class="pinned-bar hidden">
                 <div class="pin-icon">📌</div>
@@ -55,29 +68,54 @@
                 <div class="pin-close" onclick="unpinMessage()">✖</div>
             </div>
 
+            <!-- ЗАГЛУШКА (ПРИВЕТСТВИЕ) -->
+            <div id="welcome-screen">
+                <div class="welcome-content">
+                    <div style="font-size: 4rem; margin-bottom: 20px;">👻</div>
+                    <h2>Mosickgram</h2>
+                    <p>Выберите чат слева, чтобы начать общение</p>
+                </div>
+            </div>
+
             <div class="messages-area" id="messages-container"></div>
 
+            <!-- ПЛАШКА ОТВЕТА -->
             <div id="reply-bar" class="reply-bar hidden">
                 <div id="reply-info">Ответ...</div>
                 <span class="close-reply" onclick="cancelReply()">✖</span>
             </div>
 
+            <!-- ОБЛАСТЬ ВВОДА -->
             <div class="input-area">
-                <input type="file" id="file-input" style="display:none">
-                <button class="attach-btn" onclick="document.getElementById('file-input').click()">📎</button>
-                <input type="text" class="message-input" id="message-input" placeholder="Написать...">
+                <!-- Панель эмодзи -->
+                <emoji-picker class="dark hidden" id="emoji-picker"></emoji-picker>
+                
+                <input type="file" id="file-input" accept="image/*" style="display: none;">
+                
+                <button class="attach-btn" onclick="document.getElementById('file-input').click()" title="Отправить фото">📎</button>
+                <button class="attach-btn" onclick="toggleEmoji()" title="Смайлики">😃</button>
+                
+                <input type="text" class="message-input" id="message-input" placeholder="Написать сообщение...">
                 <button class="send-btn" onclick="sendMessage()">➤</button>
             </div>
-            <div id="typing-indicator" class="typing-indicator hidden">...</div>
+            
+            <div id="typing-indicator" class="typing-indicator hidden">печатает...</div>
         </div>
     </div>
 
-    <!-- ADMIN MODAL -->
+    <!-- АДМИН МОДАЛКА -->
     <div class="modal hidden" id="admin-modal">
         <div class="modal-content">
-            <div class="modal-header"><h3>Админка</h3><span onclick="toggleAdmin()">✖</span></div>
-            <button onclick="adminGetStars()">+1000 ★</button>
-            <button style="background:#d63031; margin-top:5px;" onclick="adminClearChat()">Очистить</button>
+            <div class="modal-header">
+                <h3>Админ-панель</h3>
+                <span style="cursor: pointer;" onclick="toggleAdmin()">✖</span>
+            </div>
+            <div class="stat-card">
+                <p>Баланс:</p> <button onclick="adminGetStars()">+1000 ★</button>
+            </div>
+            <div class="stat-card">
+                <p>Чат:</p> <button style="background: #d63031;" onclick="adminClearChat()">Очистить всё</button>
+            </div>
         </div>
     </div>
 
