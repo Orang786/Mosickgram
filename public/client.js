@@ -31,16 +31,16 @@ document.addEventListener('DOMContentLoaded', () => {
         chatTitle: document.getElementById('chat-title'),
         online: document.getElementById('online-counter'),
         chanList: document.getElementById('channels-list'),
+        dmsList: document.getElementById('dms-list'), // НОВЫЙ
         msgs: document.getElementById('messages-container'),
         
         input: document.getElementById('message-input'),
         fileInput: document.getElementById('file-input'),
-        avatarInput: document.getElementById('avatar-input'), // <-- НОВЫЙ ЭЛЕМЕНТ
+        avatarInput: document.getElementById('avatar-input'),
         typing: document.getElementById('typing-indicator'),
         
         replyBar: document.getElementById('reply-bar'),
         replyInfo: document.getElementById('reply-info'),
-        
         pinnedBar: document.getElementById('pinned-bar'),
         pinnedText: document.getElementById('pinned-text'),
         
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
     socket.on('update-user', u => { currentUser = u; updateUI(u); });
     socket.on('update-online', c => { if(els.online) els.online.innerText = `(${c} online)`; });
 
-    // --- CHANNELS ---
+    // --- CHANNELS & DMs ---
     function createChannelPrompt() {
         const name = prompt("Название канала:");
         if(name) socket.emit('create-channel', name);
@@ -105,22 +105,63 @@ document.addEventListener('DOMContentLoaded', () => {
             const c = channels[id];
             const div = document.createElement('div');
             div.className = `chat-item ${id === currentChannelId ? 'active' : ''}`;
-            div.onclick = () => switchChannel(id);
+            div.id = `chan-${id}`;
+            div.onclick = () => switchChannel(id, c.name);
             div.innerHTML = `
                 <div class="avatar" style="font-size:0.8rem; background:#333">${c.name[0]}</div>
                 <div class="chat-info"><h4>${c.name}</h4></div>
             `;
             els.chanList.appendChild(div);
         });
-        if(channels[currentChannelId]) els.chatTitle.innerText = channels[currentChannelId].name;
     });
 
-    function switchChannel(id) {
+    // Отрисовка личных сообщений
+    socket.on('update-dms', (dms) => {
+        els.dmsList.innerHTML = '';
+        dms.forEach(username => {
+            // Формируем ID комнаты для проверки активного класса
+            const participants = [currentUser.username, username].sort();
+            const dmId = `dm_${participants[0]}_${participants[1]}`;
+            
+            const div = document.createElement('div');
+            div.className = `chat-item ${dmId === currentChannelId ? 'active' : ''}`;
+            div.id = `dm-${username}`; // Уникальный ID DOM-элемента
+            div.onclick = () => startDM(username);
+            
+            div.innerHTML = `
+                <div class="avatar" style="font-size:0.8rem; background: var(--accent-color)">${username[0].toUpperCase()}</div>
+                <div class="chat-info"><h4>${username}</h4><p>Личный чат</p></div>
+            `;
+            els.dmsList.appendChild(div);
+        });
+    });
+
+    // Начать или перейти в ЛС
+    function startDM(targetUsername) {
+        socket.emit('start-dm', targetUsername);
+    }
+    
+    // Сервер говорит: "зайди в эту комнату ЛС"
+    socket.on('force-join-dm', (data) => {
+        switchChannel(data.dmId, data.target);
+    });
+
+    function switchChannel(id, name) {
         if(id === currentChannelId) return;
         currentChannelId = id;
+        els.chatTitle.innerText = name || 'Чат';
         els.msgs.innerHTML = '';
         els.welcome.classList.add('hidden');
         if(window.innerWidth <= 768) els.sidebar.classList.remove('open');
+        
+        // Обновляем визуальное выделение
+        document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
+        // Пытаемся найти элемент в каналах или в ЛС
+        const activeItem = document.getElementById(`chan-${id}`) || 
+                           document.getElementById(`dm-${name}`); 
+                           // Note: name here might differ for DMs, logic simplified
+        if (activeItem) activeItem.classList.add('active');
+        
         socket.emit('join-channel', id);
     }
 
@@ -278,6 +319,12 @@ document.addEventListener('DOMContentLoaded', () => {
         contextMenu.className = 'context-menu';
         contextMenu.style.top = e.clientY + 'px';
         contextMenu.style.left = e.clientX + 'px';
+        
+        // Кнопка Написать в ЛС
+        if (msg.username !== currentUser.username) {
+            addCtxItem('💬 Написать лично', () => startDM(msg.username));
+        }
+
         addCtxItem('Ответить', () => startReply(msg));
         if(isMe) addCtxItem('Изменить', () => startEdit(msg));
         if(isMe || isAdmin) addCtxItem('Удалить', () => { if(confirm('Удалить?')) socket.emit('delete-message', msg.id); }, true);
@@ -298,7 +345,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     socket.on('display-typing', u => { els.typing.innerText = `${u} печатает...`; els.typing.classList.remove('hidden'); clearTimeout(typingTimeout); typingTimeout = setTimeout(() => els.typing.classList.add('hidden'), 2000); });
 
-    // FILES (CHAT IMAGES)
     els.fileInput.onchange = function() {
         const f = this.files[0];
         if(f) {
@@ -308,31 +354,15 @@ document.addEventListener('DOMContentLoaded', () => {
         } this.value = '';
     }
 
-    // === НОВАЯ ЛОГИКА АВАТАРОК ===
-    // Клик по аватару -> открываем скрытый инпут
-    els.myAv.onclick = () => {
-        els.avatarInput.click();
-    };
-
-    // Когда файл выбран
+    els.myAv.onclick = () => { els.avatarInput.click(); };
     els.avatarInput.onchange = function() {
         const file = this.files[0];
         if (!file) return;
-
-        // Проверка размера (1Мб), чтобы база не переполнилась
-        if (file.size > 1024 * 1024) {
-            alert("Файл слишком большой! Максимальный размер 1Мб.");
-            this.value = '';
-            return;
-        }
-
+        if (file.size > 1024 * 1024) { alert("Файл слишком большой! Максимальный размер 1Мб."); this.value = ''; return; }
         const reader = new FileReader();
-        reader.onload = (e) => {
-            // Отправляем Base64 строку на сервер
-            socket.emit('change-avatar', e.target.result);
-        };
+        reader.onload = (e) => { socket.emit('change-avatar', e.target.result); };
         reader.readAsDataURL(file);
-        this.value = ''; // Сброс
+        this.value = '';
     };
 
     // EXPORTS
