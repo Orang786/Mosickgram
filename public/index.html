@@ -31,7 +31,6 @@
         <div class="sidebar">
             <div class="header">
                 <div class="user-profile">
-                    <!-- Аватар теперь кликабельный через JS -->
                     <div class="avatar" id="my-avatar" title="Нажми, чтобы сменить фото">?</div>
                     <div class="info">
                         <div id="my-username" style="font-weight: bold;">Гость</div>
@@ -41,7 +40,16 @@
                 <button class="create-chan-btn" onclick="createChannelPrompt()">+ Создать канал</button>
             </div>
             
-            <div class="chat-list" id="channels-list"></div>
+            <!-- СПИСОК ЧАТОВ -->
+            <div class="sidebar-scroll">
+                <div class="section-label">КАНАЛЫ</div>
+                <div class="chat-list" id="channels-list"></div>
+
+                <div class="section-label" style="margin-top: 20px;">ЛИЧНЫЕ СООБЩЕНИЯ</div>
+                <div class="chat-list" id="dms-list">
+                    <!-- Сюда попадут личные чаты -->
+                </div>
+            </div>
              
              <div style="padding: 15px; border-top: 1px solid #333;">
                 <button class="nitro-btn" onclick="buyNitro()">NITRO (500★)</button>
@@ -72,7 +80,7 @@
                 <div class="welcome-content">
                     <div style="font-size: 4rem; margin-bottom: 20px;">👻</div>
                     <h2>Mosickgram</h2>
-                    <p>Выберите чат слева, чтобы начать общение</p>
+                    <p>Выберите канал или начните личную переписку</p>
                 </div>
             </div>
 
@@ -85,10 +93,8 @@
 
             <div class="input-area">
                 <emoji-picker class="dark hidden" id="emoji-picker"></emoji-picker>
-                
-                <!-- Инпуты для файлов -->
                 <input type="file" id="file-input" accept="image/*" style="display: none;">
-                <input type="file" id="avatar-input" accept="image/*" style="display: none;"> <!-- НОВЫЙ ИНПУТ ДЛЯ АВАТАРА -->
+                <input type="file" id="avatar-input" accept="image/*" style="display: none;">
 
                 <button class="attach-btn" onclick="document.getElementById('file-input').click()" title="Отправить фото">📎</button>
                 <button class="attach-btn" onclick="toggleEmoji()" title="Смайлики">😃</button>
@@ -100,7 +106,7 @@
         </div>
     </div>
 
-    <!-- АДМИН ПАНЕЛЬ -->
+    <!-- ADMIN PANEL -->
     <div class="admin-panel-overlay hidden" id="admin-panel">
         <div class="admin-dashboard">
             <div class="admin-sidebar">
