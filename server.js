@@ -8,12 +8,12 @@ const bcrypt = require('bcryptjs');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { maxHttpBufferSize: 1.5e7 }); // 15MB limit
+const io = new Server(server, { maxHttpBufferSize: 1.5e7 });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
 const MONGO_URI = process.env.MONGO_URI; 
-if (!MONGO_URI) console.error("❌ MONGO_URI Error: Check Render Environment Variables");
+if (!MONGO_URI) console.error("❌ MONGO_URI Error");
 
 mongoose.connect(MONGO_URI)
     .then(() => {
@@ -80,10 +80,9 @@ function getOnlineCount() {
 }
 
 io.on('connection', (socket) => {
-    // Сразу шлем онлайн
     socket.emit('update-online', getOnlineCount());
 
-    // === ФУНКЦИИ ВХОДА ===
+    // === ВНУТРЕННИЕ ФУНКЦИИ ===
     async function joinChannel(socket, channelId) {
         if (channelId.startsWith('dm_')) {
             const username = activeSockets[socket.id];
@@ -136,8 +135,6 @@ io.on('connection', (socket) => {
             if (type === 'register') {
                 const exists = await User.findOne({ username });
                 if (exists) return socket.emit('auth-error', 'Ник занят');
-                if (username.length > 15) return socket.emit('auth-error', 'Длинный ник');
-
                 const hashedPassword = await bcrypt.hash(password, 10);
                 const newUser = new User({
                     username,
@@ -147,15 +144,12 @@ io.on('connection', (socket) => {
                 });
                 await newUser.save();
                 loginUser(socket, newUser);
-
             } else {
                 const user = await User.findOne({ username });
                 if (!user) return socket.emit('auth-error', 'Пользователь не найден');
-                
                 const isMatch = await bcrypt.compare(password, user.password);
                 if (!isMatch) return socket.emit('auth-error', 'Неверный пароль');
                 if (user.isBanned) return socket.emit('auth-error', '⛔ ВЫ ЗАБАНЕНЫ!');
-
                 loginUser(socket, user);
             }
         } catch (e) { console.error(e); }
@@ -203,11 +197,10 @@ io.on('connection', (socket) => {
         if (!username) return;
         
         const user = await User.findOne({ username });
-        if (!user || user.isBanned) return; // Безопасная проверка
+        if (!user || user.isBanned) return;
         
         if (data.text && data.text.startsWith('/')) return;
 
-        // Лимит размера
         if (data.image) {
             const sizeInBytes = Buffer.byteLength(data.image, 'utf8');
             const limit = user.isNitro ? 15 * 1024 * 1024 : 1.5 * 1024 * 1024;
@@ -233,6 +226,7 @@ io.on('connection', (socket) => {
         io.to(savedMsg.channelId).emit('message', formatMsg(savedMsg));
     });
 
+    // === БЕЗОПАСНОЕ УДАЛЕНИЕ ===
     socket.on('delete-message', async (id) => {
         const username = activeSockets[socket.id];
         if (!username) return;
@@ -241,7 +235,7 @@ io.on('connection', (socket) => {
         if(!msg) return;
 
         const user = await User.findOne({ username });
-        if (!user) return; // FIX CRASH
+        if (!user) return; // <--- ВОТ ИСПРАВЛЕНИЕ ОШИБКИ (Null Check)
 
         if (msg.username === username || user.isAdmin) {
             await Message.findByIdAndDelete(id);
@@ -268,12 +262,13 @@ io.on('connection', (socket) => {
         }
     });
 
+    // === БЕЗОПАСНЫЙ ПИН ===
     socket.on('pin-message', async (id) => {
         const username = activeSockets[socket.id];
         if (!username) return;
 
         const user = await User.findOne({username});
-        if(!user || !user.isAdmin) return; // FIX CRASH
+        if(!user || !user.isAdmin) return; // FIX
 
         const msg = await Message.findById(id);
         if(!msg || msg.channelId.startsWith('dm_')) return;
@@ -282,10 +277,13 @@ io.on('connection', (socket) => {
         io.to(msg.channelId).emit('update-pinned', formatMsg(msg));
     });
     
+    // === БЕЗОПАСНЫЙ АНПИН ===
     socket.on('unpin-message', async () => {
          const username = activeSockets[socket.id];
+         if (!username) return;
+
          const user = await User.findOne({username});
-         if(!user || !user.isAdmin) return;
+         if(!user || !user.isAdmin) return; // FIX
 
          const room = Array.from(socket.rooms).find(r => r !== socket.id);
          if(room && !room.startsWith('dm_')) {
@@ -307,9 +305,9 @@ io.on('connection', (socket) => {
         socket.emit('update-user', updated);
     });
     
-    // === ECONOMY ===
     socket.on('top-up-balance', async (amount) => {
         const username = activeSockets[socket.id];
+        if (!username) return;
         const user = await User.findOne({ username });
         if (user) {
             user.stars += amount;
@@ -321,6 +319,7 @@ io.on('connection', (socket) => {
 
     socket.on('buy-nitro', async () => {
         const username = activeSockets[socket.id];
+        if (!username) return;
         const user = await User.findOne({ username });
         if (user && user.stars >= 500) {
             user.stars -= 500; user.isNitro = true;
@@ -334,6 +333,7 @@ io.on('connection', (socket) => {
 
     socket.on('change-name-color', async (color) => {
         const username = activeSockets[socket.id];
+        if (!username) return;
         const user = await User.findOne({ username });
         if (user && user.isNitro) {
             user.customColor = color; await user.save();
@@ -344,6 +344,7 @@ io.on('connection', (socket) => {
     // === ADMIN ===
     socket.on('admin-get-data', async () => {
         const username = activeSockets[socket.id];
+        if (!username) return;
         const user = await User.findOne({ username });
         if (!user || !user.isAdmin) return;
 
@@ -359,6 +360,7 @@ io.on('connection', (socket) => {
 
     socket.on('admin-user-action', async (data) => {
         const adminName = activeSockets[socket.id];
+        if (!adminName) return;
         const admin = await User.findOne({ username: adminName });
         if (!admin || !admin.isAdmin) return;
 
@@ -385,12 +387,14 @@ io.on('connection', (socket) => {
 
     socket.on('admin-clear-chat', async () => {
          const username = activeSockets[socket.id];
+         if (!username) return;
          const user = await User.findOne({ username });
          if(user && user.isAdmin) { await Message.deleteMany({}); io.emit('clear-chat'); }
     });
     
     socket.on('admin-give-stars', async () => {
         const username = activeSockets[socket.id];
+        if (!username) return;
         const user = await User.findOne({ username });
         if(user && user.isAdmin) { user.stars += 1000; await user.save(); socket.emit('update-user', user); }
     });
