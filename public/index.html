@@ -13,11 +13,15 @@
     <div id="login-screen" class="login-overlay">
         <div class="login-box">
             <h2 id="auth-title">Mosickgram</h2>
+            <p style="color: #aaa; font-size: 0.9em; margin-bottom: 20px;">Добро пожаловать</p>
             <input type="text" id="username-input" placeholder="Никнейм" maxlength="15">
             <input type="password" id="password-input" placeholder="Пароль">
             <div id="error-msg"></div>
             <button onclick="submitAuth()" id="submit-btn">Войти</button>
-            <p style="margin-top: 15px; font-size: 0.9em; color: #888; cursor:pointer" onclick="toggleAuthMode()">Создать аккаунт</p>
+            <p style="margin-top: 15px; font-size: 0.9em; color: #888;">
+                <span id="toggle-text">Нет аккаунта?</span> 
+                <a href="#" onclick="toggleAuthMode()">Создать</a>
+            </p>
         </div>
     </div>
 
@@ -31,7 +35,6 @@
                     <div class="info">
                         <div id="my-username" style="font-weight: bold;">Гость</div>
                         <div class="balance" id="my-balance" onclick="openPaymentModal()" style="cursor: pointer;" title="Пополнить">★ 0</div>
-                        <!-- Выбор цвета (только для Nitro) -->
                         <input type="color" id="nitro-color-picker" class="hidden" title="Цвет ника">
                     </div>
                 </div>
@@ -135,13 +138,13 @@
                 <span onclick="closeModals()">✖</span>
             </div>
             <ul style="text-align: left; margin: 15px 0; color: #ccc; list-style: none;">
-                <li>🌈 <b>Цветной никнейм</b> (выбери любой!)</li>
-                <li>📁 <b>Загрузка до 10Мб</b> (вместо 1Мб)</li>
-                <li>✨ <b>Значок Nitro</b> в профиле</li>
-                <li>😎 <b>Респект</b> от пацанов</li>
+                <li>🌈 <b>Цветной никнейм</b></li>
+                <li>📁 <b>Загрузка до 10Мб</b></li>
+                <li>✨ <b>Значок Nitro</b></li>
+                <li>😎 <b>Респект</b></li>
             </ul>
             <div style="background: #222; padding: 10px; border-radius: 8px; margin-bottom: 15px;">
-                Цена: <span style="color: gold;">500 ★</span> / навсегда
+                Цена: <span style="color: gold;">500 ★</span>
             </div>
             <button class="nitro-btn" onclick="buyNitroAction()">КУПИТЬ</button>
         </div>
