@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mosickgram</title>
     <link rel="stylesheet" href="style.css">
     <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
@@ -13,29 +13,26 @@
     <div id="login-screen" class="login-overlay">
         <div class="login-box">
             <h2 id="auth-title">Mosickgram</h2>
-            <p style="color: #aaa; font-size: 0.9em; margin-bottom: 20px;">Добро пожаловать</p>
             <input type="text" id="username-input" placeholder="Никнейм" maxlength="15">
             <input type="password" id="password-input" placeholder="Пароль">
             <div id="error-msg"></div>
             <button onclick="submitAuth()" id="submit-btn">Войти</button>
-            <p style="margin-top: 15px; font-size: 0.9em; color: #888;">
-                <span id="toggle-text">Нет аккаунта?</span> 
-                <a href="#" onclick="toggleAuthMode()">Создать</a>
-            </p>
+            <p style="margin-top: 15px; font-size: 0.9em; color: #888; cursor:pointer" onclick="toggleAuthMode()">Создать аккаунт</p>
         </div>
     </div>
 
     <!-- MAIN APP -->
-    <div class="app-container">
-        <!-- SIDEBAR -->
-        <div class="sidebar">
+    <div class="app-container" id="app-container">
+        
+        <!-- SIDEBAR (СПИСОК ЧАТОВ) -->
+        <div class="sidebar" id="sidebar">
             <div class="header">
                 <div class="user-profile">
-                    <div class="avatar" id="my-avatar" title="Нажми, чтобы сменить фото">?</div>
+                    <div class="avatar" id="my-avatar">?</div>
                     <div class="info">
-                        <div id="my-username" style="font-weight: bold;">Гость</div>
-                        <div class="balance" id="my-balance" onclick="openPaymentModal()" style="cursor: pointer;" title="Пополнить">★ 0</div>
-                        <input type="color" id="nitro-color-picker" class="hidden" title="Цвет ника">
+                        <div id="my-username">Гость</div>
+                        <div class="balance" id="my-balance" onclick="openPaymentModal()">★ 0</div>
+                        <input type="color" id="nitro-color-picker" class="hidden">
                     </div>
                 </div>
             </div>
@@ -57,17 +54,19 @@
              
              <div style="padding: 15px; border-top: 1px solid #333; display: flex; gap: 5px;">
                 <button class="nitro-btn" onclick="openNitroModal()" style="flex: 1;">NITRO</button>
-                <button class="wallet-btn" onclick="openPaymentModal()" title="Кошелек">💳</button>
+                <button class="wallet-btn" onclick="openPaymentModal()">💳</button>
              </div>
         </div>
 
-        <!-- CHAT -->
-        <div class="main-chat">
+        <!-- CHAT (ПЕРЕПИСКА) -->
+        <div class="main-chat" id="main-chat">
             <div class="top-bar">
-                <button id="menu-btn" class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+                <!-- Кнопка НАЗАД (только для мобилок) -->
+                <button id="back-btn" class="mobile-back-btn" onclick="goBackToMenu()">⬅</button>
+                
                 <div class="chat-header-info">
                     <h3 id="chat-title">Mosickgram</h3>
-                    <span id="online-counter" style="color: #00b894; font-size: 0.8rem; margin-left: 10px;">(offline)</span>
+                    <span id="online-counter" style="color: #00b894; font-size: 0.8rem; margin-left: 10px;"></span>
                 </div>
                 <button id="admin-btn" class="admin-btn hidden" onclick="toggleAdmin()">⚙️</button>
             </div>
@@ -85,7 +84,7 @@
                 <div class="welcome-content">
                     <div style="font-size: 4rem; margin-bottom: 20px;">👻</div>
                     <h2>Mosickgram</h2>
-                    <p>Выберите чат слева</p>
+                    <p>Выберите чат</p>
                 </div>
             </div>
 
@@ -103,81 +102,53 @@
 
                 <button class="attach-btn" onclick="document.getElementById('file-input').click()">📎</button>
                 <button class="attach-btn" onclick="toggleEmoji()">😃</button>
-                <input type="text" class="message-input" id="message-input" placeholder="Написать сообщение...">
+                <input type="text" class="message-input" id="message-input" placeholder="Сообщение...">
                 <button class="send-btn" onclick="sendMessage()">➤</button>
             </div>
             <div id="typing-indicator" class="typing-indicator hidden">печатает...</div>
         </div>
     </div>
 
-    <!-- MODAL: PAYMENT -->
+    <!-- MODALS -->
     <div class="modal hidden" id="payment-modal">
         <div class="modal-content payment-content">
-            <div class="modal-header"><h3>Пополнение баланса</h3><span onclick="closeModals()">✖</span></div>
+            <div class="modal-header"><h3>Пополнение</h3><span onclick="closeModals()">✖</span></div>
             <div class="credit-card">
                 <div class="card-chip"></div>
-                <input type="text" placeholder="0000 0000 0000 0000" class="card-input card-number">
-                <div class="card-row">
-                    <input type="text" placeholder="MM/YY" class="card-input card-date">
-                    <input type="text" placeholder="CVC" class="card-input card-cvc">
-                </div>
+                <input type="text" placeholder="0000 0000 0000 0000" class="card-input">
+                <div class="card-row"><input type="text" placeholder="MM/YY" class="card-input"><input type="text" placeholder="CVC" class="card-input"></div>
             </div>
             <div class="payment-options">
-                <button onclick="topUp(100)">100 ★ (100₽)</button>
-                <button onclick="topUp(500)">500 ★ (450₽)</button>
-                <button onclick="topUp(1000)" style="background: gold; color: #000;">1000 ★ (Super)</button>
+                <button onclick="topUp(100)">100 ★</button><button onclick="topUp(500)">500 ★</button><button onclick="topUp(1000)" style="background:gold;color:#000">1000 ★</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: NITRO SHOP -->
     <div class="modal hidden" id="nitro-modal">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3 style="color: #a29bfe;">💎 NITRO PREMIUM</h3>
-                <span onclick="closeModals()">✖</span>
-            </div>
-            <ul style="text-align: left; margin: 15px 0; color: #ccc; list-style: none;">
-                <li>🌈 <b>Цветной никнейм</b></li>
-                <li>📁 <b>Загрузка до 10Мб</b></li>
-                <li>✨ <b>Значок Nitro</b></li>
-                <li>😎 <b>Респект</b></li>
+            <div class="modal-header"><h3 style="color:#a29bfe">NITRO</h3><span onclick="closeModals()">✖</span></div>
+            <ul style="text-align:left; color:#ccc; margin:15px 0; padding-left:20px;">
+                <li>🌈 Цветной ник</li><li>📁 Файлы до 10Мб</li><li>✨ Значок Nitro</li>
             </ul>
-            <div style="background: #222; padding: 10px; border-radius: 8px; margin-bottom: 15px;">
-                Цена: <span style="color: gold;">500 ★</span>
-            </div>
-            <button class="nitro-btn" onclick="buyNitroAction()">КУПИТЬ</button>
+            <button class="nitro-btn" onclick="buyNitroAction()">КУПИТЬ (500★)</button>
         </div>
     </div>
 
-    <!-- ADMIN PANEL -->
     <div class="admin-panel-overlay hidden" id="admin-panel">
         <div class="admin-dashboard">
             <div class="admin-sidebar">
-                <h3>Admin Panel</h3>
-                <div class="admin-menu-item active" onclick="switchAdminTab('users')">👥 Пользователи</div>
-                <div class="admin-menu-item" onclick="switchAdminTab('stats')">📊 Статистика</div>
-                <div class="admin-menu-item close" onclick="toggleAdmin()">⬅ Выход</div>
+                <h3>Admin</h3>
+                <div class="admin-menu-item active" onclick="switchAdminTab('users')">Люди</div>
+                <div class="admin-menu-item" onclick="switchAdminTab('stats')">Статы</div>
+                <div class="admin-menu-item close" onclick="toggleAdmin()">Выход</div>
             </div>
             <div class="admin-content">
                 <div id="tab-users" class="admin-tab">
-                    <div class="user-table-wrapper">
-                        <table class="user-table">
-                            <thead><tr><th>Никнейм</th><th>Статус</th><th>Роли</th><th>Действия</th></tr></thead>
-                            <tbody id="admin-users-list"></tbody>
-                        </table>
-                    </div>
+                    <div class="user-table-wrapper"><table class="user-table"><thead><tr><th>User</th><th>Status</th><th>Actions</th></tr></thead><tbody id="admin-users-list"></tbody></table></div>
                 </div>
                 <div id="tab-stats" class="admin-tab hidden">
-                    <div class="stats-grid">
-                        <div class="stat-box"><h3 id="stat-total-users">0</h3><p>Юзеров</p></div>
-                        <div class="stat-box"><h3 id="stat-online">0</h3><p>Онлайн</p></div>
-                        <div class="stat-box"><h3 id="stat-msgs">0</h3><p>Сообщений</p></div>
-                    </div>
-                    <div style="margin-top: 20px;">
-                         <button style="background: #0984e3; padding: 10px;" onclick="adminGetStars()">+1000 ★</button>
-                         <button style="background: #d63031; padding: 10px;" onclick="adminClearChat()">Очистить базу</button>
-                    </div>
+                    <div class="stats-grid"><div class="stat-box"><h3 id="stat-total-users">0</h3><p>Users</p></div><div class="stat-box"><h3 id="stat-online">0</h3><p>Online</p></div></div>
+                    <div style="margin-top:20px"><button style="background:#d63031;padding:10px" onclick="adminClearChat()">Очистить базу</button></div>
                 </div>
             </div>
         </div>
