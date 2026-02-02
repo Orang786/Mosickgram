@@ -82,19 +82,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function updateUI(user) {
-        currentUser = user; // Обновляем глобального юзера
+        currentUser = user;
         els.myUser.innerText = user.username + (user.isAdmin ? ' (A)' : '');
         els.myBal.innerText = `★ ${user.stars}`;
         
-        // Цвет ника
-        if (user.customColor) {
-            els.myUser.style.color = user.customColor;
-        } else if (user.isNitro) {
-            els.myUser.style.color = '#a29bfe';
-        } else {
-            els.myUser.style.color = '#fff';
-        }
+        // Color
+        if (user.customColor) els.myUser.style.color = user.customColor;
+        else if (user.isNitro) els.myUser.style.color = '#a29bfe';
+        else els.myUser.style.color = '#fff';
 
+        // Avatar
         if(user.avatarUrl) {
             els.myAv.innerHTML = `<img src="${user.avatarUrl}">`;
             els.myAv.style.background = 'transparent';
@@ -103,7 +100,6 @@ document.addEventListener('DOMContentLoaded', () => {
             els.myAv.style.background = user.color || '#555';
         }
         
-        // Показываем пикер цвета для Нитро
         if(user.isNitro) {
             els.nitroColor.classList.remove('hidden');
             els.nitroColor.value = user.customColor || '#ffffff';
@@ -116,45 +112,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- PAYMENT & NITRO ---
     function openPaymentModal() { els.payModal.classList.remove('hidden'); }
     function openNitroModal() { els.nitroModal.classList.remove('hidden'); }
-    function closeModals() { 
-        els.payModal.classList.add('hidden'); 
-        els.nitroModal.classList.add('hidden'); 
-    }
+    function closeModals() { els.payModal.classList.add('hidden'); els.nitroModal.classList.add('hidden'); }
     
-    // Пополнение
     window.topUp = function(amount) {
-        // Симуляция задержки банка
-        const btn = event.target;
-        const oldText = btn.innerText;
+        const btn = event.target; const oldText = btn.innerText;
         btn.innerText = "Обработка...";
         setTimeout(() => {
             socket.emit('top-up-balance', amount);
-            btn.innerText = oldText;
-            alert("Оплата прошла успешно!");
-            closeModals();
+            btn.innerText = oldText; alert("Успешно!"); closeModals();
         }, 1000);
     };
 
-    // Покупка Нитро
     window.buyNitroAction = function() {
-        if (currentUser.isNitro) return alert("У вас уже есть Nitro!");
+        if (currentUser.isNitro) return alert("Уже есть Nitro!");
         if (currentUser.stars < 500) {
-            if(confirm("Не хватает звезд! Пополнить баланс?")) {
-                closeModals();
-                openPaymentModal();
-            }
+            if(confirm("Не хватает звезд! Пополнить?")) { closeModals(); openPaymentModal(); }
             return;
         }
-        socket.emit('buy-nitro');
-        closeModals();
+        socket.emit('buy-nitro'); closeModals();
     };
 
     socket.on('payment-error', msg => alert(msg));
-
-    // Смена цвета ника
-    els.nitroColor.addEventListener('change', (e) => {
-        socket.emit('change-name-color', e.target.value);
-    });
+    els.nitroColor.addEventListener('change', (e) => socket.emit('change-name-color', e.target.value));
 
     // --- SIDEBAR TABS ---
     function switchSidebarView(view) {
@@ -268,7 +247,6 @@ document.addEventListener('DOMContentLoaded', () => {
             let content = msg.image ? `<img src="${msg.image}" class="chat-image" onclick="window.open(this.src)">` : `<div class="text">${escapeHtml(msg.text)}</div>`;
             if(msg.isEdited) content += `<span class="edited-mark">(изм.)</span>`;
             
-            // Цвет ника в сообщении
             const nameColor = msg.userColor || '#fff';
             
             div.innerHTML = `<div class="meta"><span style="color:${nameColor}">${msg.username}</span>${badges}</div>${replyHtml} ${content}`;
@@ -348,7 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     socket.on('admin-action-success', () => socket.emit('admin-get-data'));
 
-    // --- MENU & UTILS ---
+    // --- MENU ---
     document.onclick = (e) => { if(contextMenu && !e.target.closest('.context-menu')) contextMenu.remove(); };
     function showCtx(e, msg, isMe, isAdmin) {
         e.preventDefault();
@@ -375,14 +353,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function toggleSidebar() { els.sidebar.classList.toggle('open'); }
     socket.on('display-typing', u => { els.typing.innerText = `${u} печатает...`; els.typing.classList.remove('hidden'); clearTimeout(typingTimeout); typingTimeout = setTimeout(() => els.typing.classList.add('hidden'), 2000); });
 
-    // FILES
     els.fileInput.onchange = function() {
         const f = this.files[0];
         if(f) {
-            // Проверка лимита на клиенте (1Мб обычный, 10Мб Нитро)
             const limit = currentUser.isNitro ? 10 * 1024 * 1024 : 1 * 1024 * 1024;
             if (f.size > limit) return alert(currentUser.isNitro ? "Слишком большой файл (Макс 10Мб)" : "Купите Nitro для загрузки файлов > 1Мб!");
-            
             const r = new FileReader();
             r.onload = e => socket.emit('send-message', { text:'', image:e.target.result, channelId: currentChannelId });
             r.readAsDataURL(f);
@@ -393,7 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
     els.avatarInput.onchange = function() {
         const file = this.files[0];
         if (!file) return;
-        if (file.size > 1024 * 1024) { alert("Файл слишком большой! Максимальный размер 1Мб."); this.value = ''; return; }
+        if (file.size > 1024 * 1024) { alert("Файл слишком большой! Макс 1Мб."); this.value = ''; return; }
         const reader = new FileReader();
         reader.onload = (e) => { socket.emit('change-avatar', e.target.result); };
         reader.readAsDataURL(file);
