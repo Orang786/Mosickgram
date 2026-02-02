@@ -23,8 +23,7 @@
 
     <!-- MAIN APP -->
     <div class="app-container" id="app-container">
-        
-        <!-- SIDEBAR (СПИСОК ЧАТОВ) -->
+        <!-- SIDEBAR -->
         <div class="sidebar" id="sidebar">
             <div class="header">
                 <div class="user-profile">
@@ -58,12 +57,10 @@
              </div>
         </div>
 
-        <!-- CHAT (ПЕРЕПИСКА) -->
+        <!-- CHAT -->
         <div class="main-chat" id="main-chat">
             <div class="top-bar">
-                <!-- Кнопка НАЗАД (только для мобилок) -->
                 <button id="back-btn" class="mobile-back-btn" onclick="goBackToMenu()">⬅</button>
-                
                 <div class="chat-header-info">
                     <h3 id="chat-title">Mosickgram</h3>
                     <span id="online-counter" style="color: #00b894; font-size: 0.8rem; margin-left: 10px;"></span>
@@ -134,21 +131,63 @@
         </div>
     </div>
 
+    <!-- ADMIN PANEL (FIXED) -->
     <div class="admin-panel-overlay hidden" id="admin-panel">
         <div class="admin-dashboard">
             <div class="admin-sidebar">
-                <h3>Admin</h3>
-                <div class="admin-menu-item active" onclick="switchAdminTab('users')">Люди</div>
-                <div class="admin-menu-item" onclick="switchAdminTab('stats')">Статы</div>
-                <div class="admin-menu-item close" onclick="toggleAdmin()">Выход</div>
+                <h3>Admin Panel</h3>
+                <div class="admin-menu-item active" onclick="switchAdminTab('users')">👥 Пользователи</div>
+                <div class="admin-menu-item" onclick="switchAdminTab('stats')">📊 Статистика</div>
+                <div class="admin-menu-item close" onclick="toggleAdmin()">⬅ Назад</div>
             </div>
+            
             <div class="admin-content">
+                <!-- Вкладка пользователей -->
                 <div id="tab-users" class="admin-tab">
-                    <div class="user-table-wrapper"><table class="user-table"><thead><tr><th>User</th><th>Status</th><th>Actions</th></tr></thead><tbody id="admin-users-list"></tbody></table></div>
+                    <div class="admin-tools">
+                        <input type="text" id="admin-search" placeholder="🔍 Поиск пользователя..." oninput="filterUsers()">
+                        <button class="refresh-btn" onclick="refreshAdminData()">🔄</button>
+                    </div>
+                    
+                    <div class="user-table-wrapper">
+                        <table class="user-table">
+                            <thead>
+                                <tr>
+                                    <th>Имя</th>
+                                    <th>Статус</th>
+                                    <th>Роль</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-users-list">
+                                <!-- Сюда JS загрузит людей -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
+
+                <!-- Вкладка статистики -->
                 <div id="tab-stats" class="admin-tab hidden">
-                    <div class="stats-grid"><div class="stat-box"><h3 id="stat-total-users">0</h3><p>Users</p></div><div class="stat-box"><h3 id="stat-online">0</h3><p>Online</p></div></div>
-                    <div style="margin-top:20px"><button style="background:#d63031;padding:10px" onclick="adminClearChat()">Очистить базу</button></div>
+                    <h2>Статистика</h2>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <h3 id="stat-total-users">0</h3>
+                            <p>Всего людей</p>
+                        </div>
+                        <div class="stat-box">
+                            <h3 id="stat-online">0</h3>
+                            <p>Онлайн</p>
+                        </div>
+                        <div class="stat-box">
+                            <h3 id="stat-msgs">0</h3>
+                            <p>Сообщений</p>
+                        </div>
+                    </div>
+                    <div style="margin-top: 20px;">
+                         <button class="admin-danger-btn" onclick="adminClearChat()">⚠ Очистить базу сообщений</button>
+                         <br><br>
+                         <button style="background:#0984e3; padding:10px; border:none; color:white; border-radius:5px; cursor:pointer;" onclick="adminGetStars()">+1000 ★ (Себе)</button>
+                    </div>
                 </div>
             </div>
         </div>
