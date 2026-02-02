@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // DOM ELEMENTS
     const els = {
+        appContainer: document.getElementById('app-container'), // ГЛАВНЫЙ КОНТЕЙНЕР
         login: document.getElementById('login-screen'),
         userInput: document.getElementById('username-input'),
         passInput: document.getElementById('password-input'),
@@ -56,6 +57,22 @@ document.addEventListener('DOMContentLoaded', () => {
         nitroModal: document.getElementById('nitro-modal')
     };
 
+    // --- MOBILE NAVIGATION ---
+    // Функция: Открыть чат (Скрыть сайдбар)
+    function openMobileChat() {
+        if (window.innerWidth <= 768) {
+            els.appContainer.classList.add('show-chat');
+        }
+    }
+
+    // Функция: Вернуться к меню (Скрыть чат)
+    function goBackToMenu() {
+        els.appContainer.classList.remove('show-chat');
+        // Сбрасываем активный чат, чтобы не висел
+        // currentChannelId = null; (Опционально, можно оставить, чтобы при возврате чат был открыт)
+    }
+    window.goBackToMenu = goBackToMenu; // Экспорт для кнопки
+
     // --- AUTH ---
     function toggleAuthMode() {
         isRegisterMode = !isRegisterMode;
@@ -78,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
         els.login.classList.add('hidden');
         updateUI(user);
         if(user.isAdmin) els.adminBtn.classList.remove('hidden');
-        els.welcome.classList.remove('hidden');
+        if(window.innerWidth > 768) els.welcome.classList.remove('hidden'); // Показываем приветствие только на ПК
     });
 
     function updateUI(user) {
@@ -86,12 +103,10 @@ document.addEventListener('DOMContentLoaded', () => {
         els.myUser.innerText = user.username + (user.isAdmin ? ' (A)' : '');
         els.myBal.innerText = `★ ${user.stars}`;
         
-        // Color
         if (user.customColor) els.myUser.style.color = user.customColor;
         else if (user.isNitro) els.myUser.style.color = '#a29bfe';
         else els.myUser.style.color = '#fff';
 
-        // Avatar
         if(user.avatarUrl) {
             els.myAv.innerHTML = `<img src="${user.avatarUrl}">`;
             els.myAv.style.background = 'transparent';
@@ -109,22 +124,22 @@ document.addEventListener('DOMContentLoaded', () => {
     socket.on('update-user', u => { currentUser = u; updateUI(u); });
     socket.on('update-online', c => { if(els.online) els.online.innerText = `(${c} online)`; });
 
-    // --- PAYMENT & NITRO ---
+    // --- PAYMENT ---
     function openPaymentModal() { els.payModal.classList.remove('hidden'); }
     function openNitroModal() { els.nitroModal.classList.remove('hidden'); }
     function closeModals() { els.payModal.classList.add('hidden'); els.nitroModal.classList.add('hidden'); }
     
     window.topUp = function(amount) {
         const btn = event.target; const oldText = btn.innerText;
-        btn.innerText = "Обработка...";
+        btn.innerText = "...";
         setTimeout(() => {
             socket.emit('top-up-balance', amount);
-            btn.innerText = oldText; alert("Успешно!"); closeModals();
-        }, 1000);
+            btn.innerText = oldText; closeModals();
+        }, 800);
     };
 
     window.buyNitroAction = function() {
-        if (currentUser.isNitro) return alert("Уже есть Nitro!");
+        if (currentUser.isNitro) return alert("Уже есть!");
         if (currentUser.stars < 500) {
             if(confirm("Не хватает звезд! Пополнить?")) { closeModals(); openPaymentModal(); }
             return;
@@ -144,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById(`${view}-view`).classList.remove('hidden');
     }
 
-    // --- CHANNELS & DMs ---
+    // --- CHANNELS ---
     function createChannelPrompt() {
         const name = prompt("Название канала:");
         if(name) socket.emit('create-channel', name);
@@ -172,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
             div.className = `chat-item ${dmId === currentChannelId ? 'active' : ''}`;
             div.id = `dm-${username}`;
             div.onclick = () => startDM(username);
-            div.innerHTML = `<div class="avatar" style="font-size:0.8rem; background: var(--accent-color)">${username[0].toUpperCase()}</div><div class="chat-info"><h4>${username}</h4><p>Личный чат</p></div>`;
+            div.innerHTML = `<div class="avatar" style="font-size:0.8rem; background: var(--accent-color)">${username[0].toUpperCase()}</div><div class="chat-info"><h4>${username}</h4><p>ЛС</p></div>`;
             els.dmsList.appendChild(div);
         });
     });
@@ -180,6 +195,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function startDM(targetUsername) {
         socket.emit('start-dm', targetUsername);
         switchSidebarView('dms');
+        // На мобильном сразу открываем чат
+        openMobileChat();
     }
     
     socket.on('force-join-dm', (data) => {
@@ -188,16 +205,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function switchChannel(id, name) {
-        if(id === currentChannelId) return;
+        if(id === currentChannelId) {
+            // Если уже в этом чате, на мобильном просто открываем вьюху
+            openMobileChat();
+            return;
+        }
         currentChannelId = id;
         els.chatTitle.innerText = name || 'Чат';
         els.msgs.innerHTML = '';
         els.welcome.classList.add('hidden');
-        if(window.innerWidth <= 768) els.sidebar.classList.remove('open');
+        
         document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
         const activeItem = document.getElementById(`chan-${id}`) || document.getElementById(`dm-${name}`); 
         if (activeItem) activeItem.classList.add('active');
+        
         socket.emit('join-channel', id);
+        
+        // ВАЖНО: Переключаем вид на чат (для мобилок)
+        openMobileChat();
     }
 
     socket.on('set-active-channel', id => currentChannelId = id);
@@ -206,26 +231,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function sendMessage() {
         const text = els.input.value;
         if(!text.trim()) return;
-        
-        if(editingMessageId) {
-            socket.emit('edit-message', { id: editingMessageId, newText: text });
-            cancelReply();
-        } else {
-            socket.emit('send-message', { text, replyTo: replyToMessage, channelId: currentChannelId });
-            cancelReply();
-        }
-        els.input.value = '';
-        socket.emit('typing-stop');
+        if(editingMessageId) { socket.emit('edit-message', { id: editingMessageId, newText: text }); cancelReply(); }
+        else { socket.emit('send-message', { text, replyTo: replyToMessage, channelId: currentChannelId }); cancelReply(); }
+        els.input.value = ''; socket.emit('typing-stop');
     }
-    
     els.input.addEventListener('keypress', e => { if(e.key === 'Enter') sendMessage(); });
     els.input.addEventListener('input', () => socket.emit('typing'));
 
     socket.on('message', msg => renderMessage(msg));
     socket.on('load-messages', msgs => {
-        els.msgs.innerHTML = '';
-        msgs.forEach(m => renderMessage(m, false));
-        scrollToBottom();
+        els.msgs.innerHTML = ''; msgs.forEach(m => renderMessage(m, false)); scrollToBottom();
     });
     socket.on('clear-chat', () => els.msgs.innerHTML = '');
 
@@ -234,8 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const div = document.createElement('div');
         div.id = `msg-${msg.id}`;
         if(msg.type === 'system') {
-            div.className = 'message system-msg';
-            div.innerText = msg.text;
+            div.className = 'message system-msg'; div.innerText = msg.text;
         } else {
             const isMe = currentUser && msg.username === currentUser.username;
             div.className = `message ${isMe ? 'my-msg' : 'other-msg'}`;
@@ -246,14 +260,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if(msg.isNitro) badges += ' <span style="color:#ffeaa7">★</span>';
             let content = msg.image ? `<img src="${msg.image}" class="chat-image" onclick="window.open(this.src)">` : `<div class="text">${escapeHtml(msg.text)}</div>`;
             if(msg.isEdited) content += `<span class="edited-mark">(изм.)</span>`;
-            
             const nameColor = msg.userColor || '#fff';
-            
             div.innerHTML = `<div class="meta"><span style="color:${nameColor}">${msg.username}</span>${badges}</div>${replyHtml} ${content}`;
             if(!isMe && playSound) notificationSound.play().catch(()=>{});
         }
-        els.msgs.appendChild(div);
-        if(playSound) scrollToBottom();
+        els.msgs.appendChild(div); if(playSound) scrollToBottom();
     }
 
     function scrollToBottom() { els.msgs.scrollTop = els.msgs.scrollHeight; }
@@ -269,22 +280,14 @@ document.addEventListener('DOMContentLoaded', () => {
     socket.on('message-deleted', id => { const el = document.getElementById(`msg-${id}`); if(el) el.remove(); });
 
     socket.on('update-pinned', msg => {
-        if(msg) {
-            els.pinnedBar.classList.remove('hidden');
-            els.pinnedText.innerText = `${msg.username}: ${msg.text || '[Медиа]'}`;
-        } else {
-            els.pinnedBar.classList.add('hidden');
-        }
+        if(msg) { els.pinnedBar.classList.remove('hidden'); els.pinnedText.innerText = `${msg.username}: ${msg.text || '[Медиа]'}`; }
+        else { els.pinnedBar.classList.add('hidden'); }
     });
     function unpinMessage() { if(currentUser.isAdmin && confirm('Открепить?')) socket.emit('unpin-message'); }
 
     // --- EMOJI ---
     function toggleEmoji() { if(els.emojiPicker) els.emojiPicker.classList.toggle('hidden'); }
-    if(els.emojiPicker) {
-        els.emojiPicker.addEventListener('emoji-click', event => {
-            els.input.value += event.detail.unicode; els.input.focus();
-        });
-    }
+    if(els.emojiPicker) { els.emojiPicker.addEventListener('emoji-click', event => { els.input.value += event.detail.unicode; els.input.focus(); }); }
     document.addEventListener('click', (e) => {
         const isBtn = e.target.innerText === '😃' || e.target.closest('.attach-btn');
         const isPkr = e.target.tagName === 'EMOJI-PICKER';
@@ -293,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- ADMIN ---
     function toggleAdmin() {
-        if (!currentUser || !currentUser.isAdmin) return alert("Доступ запрещен!");
+        if (!currentUser || !currentUser.isAdmin) return alert("Нет прав!");
         els.adminPanel.classList.toggle('hidden');
         if (!els.adminPanel.classList.contains('hidden')) socket.emit('admin-get-data');
     }
@@ -312,85 +315,66 @@ document.addEventListener('DOMContentLoaded', () => {
         users.forEach(u => {
             const tr = document.createElement('tr');
             let roles = '';
-            if (u.isAdmin) roles += '<span class="badge admin">ADMIN</span>';
+            if (u.isAdmin) roles += '<span class="badge admin">ADM</span>';
             if (u.isNitro) roles += '<span class="badge nitro">NITRO</span>';
-            if (u.isBanned) roles += '<span class="badge banned">BANNED</span>';
-            if (!roles) roles = '<span style="color:#555">-</span>';
-            tr.innerHTML = `<td><span class="status-dot ${u.isOnline ? 'online' : 'offline'}"></span> <b>${escapeHtml(u.username)}</b></td><td>${u.isOnline ? '<span style="color:#00b894">Online</span>' : 'Offline'}</td><td>${roles}</td><td><button class="act-btn btn-ban" onclick="adminAction('${u._id}', 'ban')">${u.isBanned ? 'Разбанить' : 'Бан'}</button><button class="act-btn btn-promote" onclick="adminAction('${u._id}', 'promote')">${u.isAdmin ? 'Снять Adm' : 'Дать Adm'}</button><button class="act-btn" style="background:#ffeaa7" onclick="adminAction('${u._id}', 'nitro')">Nitro</button></td>`;
+            if (u.isBanned) roles += '<span class="badge banned">BAN</span>';
+            tr.innerHTML = `<td><span class="status-dot ${u.isOnline ? 'online' : 'offline'}"></span> <b>${escapeHtml(u.username)}</b></td><td>${u.isOnline ? 'On' : 'Off'}</td><td>${roles}</td><td><button class="act-btn btn-ban" onclick="adminAction('${u._id}', 'ban')">BAN</button><button class="act-btn btn-promote" onclick="adminAction('${u._id}', 'promote')">ADM</button><button class="act-btn" style="background:#ffeaa7" onclick="adminAction('${u._id}', 'nitro')">★</button></td>`;
             els.usersList.appendChild(tr);
         });
     });
-    window.adminAction = function(userId, action) {
-        if (!confirm(`Выполнить: ${action}?`)) return;
-        socket.emit('admin-user-action', { userId, action });
-    };
+    window.adminAction = function(userId, action) { if (confirm(`Точно?`)) socket.emit('admin-user-action', { userId, action }); };
     socket.on('admin-action-success', () => socket.emit('admin-get-data'));
 
-    // --- MENU ---
+    // --- CTX MENU ---
     document.onclick = (e) => { if(contextMenu && !e.target.closest('.context-menu')) contextMenu.remove(); };
     function showCtx(e, msg, isMe, isAdmin) {
-        e.preventDefault();
-        if(contextMenu) contextMenu.remove();
-        contextMenu = document.createElement('div');
-        contextMenu.className = 'context-menu';
-        contextMenu.style.top = e.clientY + 'px';
-        contextMenu.style.left = e.clientX + 'px';
-        if (msg.username !== currentUser.username) addCtxItem('💬 Написать лично', () => startDM(msg.username));
-        addCtxItem('Ответить', () => startReply(msg));
-        if(isMe) addCtxItem('Изменить', () => startEdit(msg));
-        if(isMe || isAdmin) addCtxItem('Удалить', () => { if(confirm('Удалить?')) socket.emit('delete-message', msg.id); }, true);
-        if(isAdmin) addCtxItem('📌 Закрепить', () => socket.emit('pin-message', msg.id));
+        e.preventDefault(); if(contextMenu) contextMenu.remove();
+        contextMenu = document.createElement('div'); contextMenu.className = 'context-menu';
+        contextMenu.style.top = e.clientY + 'px'; contextMenu.style.left = e.clientX + 'px';
+        if (msg.username !== currentUser.username) addCtxItem('💬 ЛС', () => startDM(msg.username));
+        addCtxItem('Ответ', () => startReply(msg));
+        if(isMe) addCtxItem('Изм.', () => startEdit(msg));
+        if(isMe || isAdmin) addCtxItem('Удалить', () => { if(confirm('?')) socket.emit('delete-message', msg.id); }, true);
+        if(isAdmin) addCtxItem('📌 Пин', () => socket.emit('pin-message', msg.id));
         document.body.appendChild(contextMenu);
     }
     function addCtxItem(text, cb, isDel=false) {
-        const i = document.createElement('div');
-        i.className = 'context-menu-item' + (isDel ? ' delete' : '');
+        const i = document.createElement('div'); i.className = 'context-menu-item' + (isDel ? ' delete' : '');
         i.innerText = text; i.onclick = cb; contextMenu.appendChild(i);
     }
-    function startReply(msg) { replyToMessage = { username: msg.username, text: msg.text || 'Медиа' }; editingMessageId = null; els.replyBar.classList.remove('hidden'); els.replyInfo.innerText = `В ответ ${msg.username}`; els.input.focus(); }
-    function startEdit(msg) { editingMessageId = msg.id; replyToMessage = null; els.replyBar.classList.remove('hidden'); els.replyInfo.innerText = "Редактирование"; els.input.value = msg.text; els.input.focus(); }
+    function startReply(msg) { replyToMessage = { username: msg.username, text: msg.text || 'Медиа' }; editingMessageId = null; els.replyBar.classList.remove('hidden'); els.replyInfo.innerText = `To: ${msg.username}`; els.input.focus(); }
+    function startEdit(msg) { editingMessageId = msg.id; replyToMessage = null; els.replyBar.classList.remove('hidden'); els.replyInfo.innerText = "Edit"; els.input.value = msg.text; els.input.focus(); }
     function cancelReply() { replyToMessage = null; editingMessageId = null; els.replyBar.classList.add('hidden'); els.input.value = ''; }
-    function toggleSidebar() { els.sidebar.classList.toggle('open'); }
-    socket.on('display-typing', u => { els.typing.innerText = `${u} печатает...`; els.typing.classList.remove('hidden'); clearTimeout(typingTimeout); typingTimeout = setTimeout(() => els.typing.classList.add('hidden'), 2000); });
+    
+    socket.on('display-typing', u => { els.typing.innerText = `${u}...`; els.typing.classList.remove('hidden'); clearTimeout(typingTimeout); typingTimeout = setTimeout(() => els.typing.classList.add('hidden'), 2000); });
 
     els.fileInput.onchange = function() {
-        const f = this.files[0];
-        if(f) {
-            const limit = currentUser.isNitro ? 10 * 1024 * 1024 : 1 * 1024 * 1024;
-            if (f.size > limit) return alert(currentUser.isNitro ? "Слишком большой файл (Макс 10Мб)" : "Купите Nitro для загрузки файлов > 1Мб!");
-            const r = new FileReader();
-            r.onload = e => socket.emit('send-message', { text:'', image:e.target.result, channelId: currentChannelId });
-            r.readAsDataURL(f);
-        } this.value = '';
+        const f = this.files[0]; if(!f) return;
+        const limit = currentUser.isNitro ? 10 * 1024 * 1024 : 1 * 1024 * 1024;
+        if (f.size > limit) return alert("File too big!");
+        const r = new FileReader(); r.onload = e => socket.emit('send-message', { text:'', image:e.target.result, channelId: currentChannelId }); r.readAsDataURL(f); this.value = '';
     }
-
     els.myAv.onclick = () => { els.avatarInput.click(); };
     els.avatarInput.onchange = function() {
-        const file = this.files[0];
-        if (!file) return;
-        if (file.size > 1024 * 1024) { alert("Файл слишком большой! Макс 1Мб."); this.value = ''; return; }
-        const reader = new FileReader();
-        reader.onload = (e) => { socket.emit('change-avatar', e.target.result); };
-        reader.readAsDataURL(file);
-        this.value = '';
+        const f = this.files[0]; if(!f) return;
+        const r = new FileReader(); r.onload = (e) => { socket.emit('change-avatar', e.target.result); }; r.readAsDataURL(f); this.value = '';
     };
 
-    // EXPORTS
     window.submitAuth = submitAuth;
     window.toggleAuthMode = toggleAuthMode;
     window.createChannelPrompt = createChannelPrompt;
-    window.buyNitro = () => { if(confirm('Купить Nitro?')) socket.emit('buy-nitro'); };
+    window.buyNitro = () => { if(confirm('Buy?')) socket.emit('buy-nitro'); };
     window.toggleAdmin = toggleAdmin;
     window.adminGetStars = () => { socket.emit('admin-give-stars'); alert('+1000'); };
-    window.adminClearChat = () => { if(confirm('Очистить?')) socket.emit('admin-clear-chat'); };
+    window.adminClearChat = () => { if(confirm('Clear?')) socket.emit('admin-clear-chat'); };
     window.toggleEmoji = toggleEmoji;
     window.unpinMessage = unpinMessage;
     window.cancelReply = cancelReply;
-    window.toggleSidebar = toggleSidebar;
     window.sendMessage = sendMessage;
     window.switchSidebarView = switchSidebarView;
     window.openPaymentModal = openPaymentModal;
     window.openNitroModal = openNitroModal;
     window.closeModals = closeModals;
     window.buyNitroAction = buyNitroAction;
+    window.goBackToMenu = goBackToMenu;
 });
