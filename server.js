@@ -1,10 +1,10 @@
-require('dotenv').config(); // Для локальной разработки
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 
 const app = express();
 const server = http.createServer(app);
