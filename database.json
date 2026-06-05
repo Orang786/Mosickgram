@@ -1,0 +1,75 @@
+{
+  "users": {
+    "OrangLaut": {
+      "username": "OrangLaut",
+      "password": "111",
+      "stars": 0,
+      "isNitro": false,
+      "isAdmin": false,
+      "isBanned": false,
+      "color": "#e405ca",
+      "avatarUrl": null,
+      "joinedAt": "01.02.2026"
+    }
+  },
+  "messages": [
+    {
+      "id": "1769929466890cyufaqlr3",
+      "channelId": "global",
+      "username": "OrangLaut",
+      "type": "user",
+      "text": "ID LIKE THIS MESSENGER",
+      "image": null,
+      "replyTo": null,
+      "isEdited": true,
+      "isNitro": false,
+      "isAdmin": false,
+      "userColor": "#e405ca",
+      "avatarUrl": null,
+      "time": "14:04"
+    },
+    {
+      "id": "1769929504483bn2gsb99b",
+      "channelId": "global",
+      "username": "OrangLaut",
+      "type": "user",
+      "text": "hah",
+      "image": null,
+      "replyTo": {
+        "username": "OrangLaut",
+        "text": "lol"
+      },
+      "isEdited": false,
+      "isNitro": false,
+      "isAdmin": false,
+      "userColor": "#e405ca",
+      "avatarUrl": null,
+      "time": "14:05"
+    },
+    {
+      "id": "176992958194207d0jyxuo",
+      "channelId": "global",
+      "username": "OrangLaut",
+      "type": "user",
+      "text": "lol",
+      "image": null,
+      "replyTo": null,
+      "isEdited": false,
+      "isNitro": false,
+      "isAdmin": false,
+      "userColor": "#e405ca",
+      "avatarUrl": null,
+      "time": "14:06"
+    }
+  ],
+  "channels": {
+    "global": {
+      "name": "Global Chat",
+      "desc": "Главный сервер"
+    },
+    "chan-1769929265087": {
+      "name": "lol",
+      "desc": "Создатель: OrangLaut"
+    }
+  }
+}

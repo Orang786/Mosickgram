@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Mosikgram - современный Discord-подобный мессенджер">
+    <title>🎵 Mosikgram</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- AUTH SCREEN -->
+    <div id="login-screen" class="login-overlay">
+        <div class="login-box">
+            <h2 id="auth-title">🎵 Mosikgram</h2>
+            <input type="text" id="username-input" placeholder="Никнейм" maxlength="15" autocomplete="off">
+            <input type="password" id="password-input" placeholder="Пароль" autocomplete="off">
+            <div id="error-msg"></div>
+            <button onclick="submitAuth()" id="submit-btn">Войти</button>
+            <p id="toggle-text" onclick="toggleAuthMode()">Создать аккаунт</p>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div class="app-container">
+        <!-- LEFT SIDEBAR (CHANNELS) -->
+        <div class="sidebar">
+            <div class="header">
+                <div class="user-profile" title="Кликните для смены аватара">
+                    <div class="avatar" id="my-avatar">?</div>
+                    <div class="info">
+                        <div id="my-username">Гость</div>
+                        <div class="balance" id="my-balance">⭐ 0</div>
+                    </div>
+                </div>
+                <button class="create-chan-btn" onclick="createChannelPrompt()">➕ Канал</button>
+            </div>
+            
+            <div class="chat-list" id="channels-list"></div>
+            
+            <div style="padding:8px;">
+                <button class="nitro-btn" onclick="buyNitro()">✨ Nitro</button>
+            </div>
+        </div>
+
+        <!-- MAIN CHAT AREA -->
+        <div class="main-chat">
+            <!-- TOP BAR -->
+            <div class="top-bar">
+                <button id="menu-btn" class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+                
+                <div class="chat-header-info">
+                    <h3 id="chat-title">Загрузка...</h3>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span id="online-counter">(0 online)</span>
+                    <button id="admin-btn" class="admin-btn hidden" onclick="toggleAdmin()" title="Админка">⚙️</button>
+                </div>
+            </div>
+            
+            <!-- PINNED MESSAGE -->
+            <div id="pinned-bar" class="pinned-bar hidden">
+                <div class="pin-icon">📌</div>
+                <div class="pin-content">
+                    <div class="pin-title">Закреплено</div>
+                    <div class="pin-text" id="pinned-text">...</div>
+                </div>
+                <div class="pin-close" onclick="unpinMessage()" title="Открепить">✖</div>
+            </div>
+
+            <!-- MESSAGES -->
+            <div class="messages-area" id="messages-container"></div>
+
+            <!-- REPLY BAR -->
+            <div id="reply-bar" class="reply-bar hidden">
+                <span id="reply-info">Ответ...</span>
+                <span class="close-reply" onclick="cancelReply()">✖</span>
+            </div>
+
+            <!-- INPUT AREA -->
+            <div class="input-area">
+                <input type="file" id="file-input" style="display:none" accept="image/*">
+                <button class="attach-btn" onclick="document.getElementById('file-input').click()" title="Фото">📎</button>
+                <input type="text" class="message-input" id="message-input" placeholder="Напишите сообщение...">
+                <button class="send-btn" onclick="sendMessage()" title="Отправить">➤</button>
+            </div>
+            
+            <div id="typing-indicator" class="typing-indicator hidden">✏️ печатает...</div>
+        </div>
+    </div>
+
+    <!-- ADMIN MODAL -->
+    <div class="modal hidden" id="admin-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🛡️ Админка</h3>
+                <span onclick="toggleAdmin()">✖</span>
+            </div>
+            <button onclick="adminGetStars()">💰 +1000 ⭐</button>
+            <button style="background: #F04747;" onclick="adminClearChat()">🗑️ Очистить</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client.js"></script>
+</body>
+</html>
