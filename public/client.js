@@ -208,7 +208,7 @@ function scrollToBottom() { els.msgs.scrollTop = els.msgs.scrollHeight; }
 
 function escapeHtml(text) {
     if(!text) return '';
-    return text.replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]);
+    return text.replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
 }
 
 // Context menu
