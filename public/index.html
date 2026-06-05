@@ -22,28 +22,190 @@
 
     <!-- MAIN APP -->
     <div class="app-container">
-        <!-- LEFT SIDEBAR (CHANNELS) -->
-        <div class="sidebar">
-            <div class="header">
-                <div class="user-profile" title="Кликните для смены аватара">
-                    <div class="avatar" id="my-avatar">?</div>
-                    <div class="info">
-                        <div id="my-username">Гость</div>
-                        <div class="balance" id="my-balance">⭐ 0</div>
-                    </div>
-                </div>
-                <button class="create-chan-btn" onclick="createChannelPrompt()">➕ Канал</button>
-            </div>
-            
-            <div class="chat-list" id="channels-list"></div>
-            
-            <div style="padding:8px;">
-                <button class="nitro-btn" onclick="buyNitro()">✨ Nitro</button>
+        <!-- LEFT NAVIGATION (DISCORD STYLE) -->
+        <div class="left-nav">
+            <div class="nav-top">
+                <div class="nav-icon active" title="Друзья" onclick="switchView('friends', this)">👥</div>
+                <div class="nav-icon" title="Nitro" onclick="switchView('nitro', this)">✨</div>
+                <div class="nav-icon" title="Магазин" onclick="switchView('shop', this)">🏪</div>
+                <div class="nav-icon" title="Задания" onclick="switchView('quests', this)">📋</div>
             </div>
         </div>
 
-        <!-- MAIN CHAT AREA -->
-        <div class="main-chat">
+        <!-- LEFT SIDEBAR - FRIENDS LIST -->
+        <div class="sidebar" id="friends-sidebar">
+            <div class="friends-header">
+                <input type="text" class="search-input" placeholder="Найти или начать беседу" onkeyup="searchFriends(this.value)">
+                <div class="online-counter-header">В сети — <span id="online-count">0</span></div>
+            </div>
+            
+            <div class="direct-messages">
+                <div class="dm-section-title">Личные сообщения</div>
+                <div class="dm-list" id="dm-list">
+                    <!-- ДМ будут добавлены динамически -->
+                </div>
+            </div>
+            
+            <div class="user-panel-bottom">
+                <div class="user-panel" title="Профиль">
+                    <div class="user-avatar" id="my-avatar">?</div>
+                    <div class="user-info">
+                        <div id="my-username">Гость</div>
+                        <div class="user-status">Онлайн</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT AREA -->
+        <div class="main-content">
+            <!-- FRIENDS VIEW -->
+            <div id="friends-view" class="content-view">
+                <div class="view-header">
+                    <h2>В сети</h2>
+                    <span class="online-badge" id="friends-online-badge">0</span>
+                </div>
+                
+                <div class="friends-list" id="friends-list">
+                    <!-- Друзья будут добавлены динамически -->
+                </div>
+            </div>
+
+            <!-- NITRO VIEW -->
+            <div id="nitro-view" class="content-view hidden">
+                <div class="view-header">
+                    <h2>Nitro</h2>
+                </div>
+                <div class="nitro-content">
+                    <div class="nitro-banner">✨ Разблокируйте новые возможности с Nitro!</div>
+                    <button class="nitro-buy-btn" onclick="buyNitro()">Купить Nitro (500 ⭐)</button>
+                </div>
+            </div>
+
+            <!-- SHOP VIEW -->
+            <div id="shop-view" class="content-view hidden">
+                <div class="view-header">
+                    <h2>Магазин</h2>
+                    <div class="shop-tabs">
+                        <span class="shop-tab active">Рекомендуемые</span>
+                        <span class="shop-tab">Просмотр ▾</span>
+                        <span class="shop-tab">Orbs</span>
+                        <span class="shop-tab">Игровые магазины ▾</span>
+                    </div>
+                    <div class="shop-balance">Баланс: <span id="shop-balance">0</span> ⭐</div>
+                </div>
+                
+                <div class="shop-content">
+                    <div class="shop-banner">
+                        <img src="https://via.placeholder.com/600x200/1E1F22/FFFFFF?text=Twilight+Seas" alt="Twilight Seas">
+                        <div class="banner-text">Twilight Seas</div>
+                    </div>
+                    
+                    <div class="shop-section">
+                        <h3>Twilight Seas</h3>
+                        <div class="shop-items">
+                            <div class="shop-item">
+                                <div class="item-icon">🌊</div>
+                                <div class="item-info">
+                                    <div class="item-name">Набор «Безмятежные волны...»</div>
+                                    <div class="item-price">15,99 € <span class="discount">(-11%)</span></div>
+                                </div>
+                            </div>
+                            <div class="shop-item">
+                                <div class="item-icon">⭐</div>
+                                <div class="item-info">
+                                    <div class="item-name">Набор «Падающие звёзды...»</div>
+                                    <div class="item-price">15,99 € <span class="discount">(-11%)</span></div>
+                                </div>
+                            </div>
+                            <div class="shop-item">
+                                <div class="item-icon">🌙</div>
+                                <div class="item-info">
+                                    <div class="item-name">Набор «Полуночные скаты...»</div>
+                                    <div class="item-price">15,99 € <span class="discount">(-11%)</span></div>
+                                </div>
+                            </div>
+                            <div class="shop-item">
+                                <div class="item-icon">💙</div>
+                                <div class="item-info">
+                                    <div class="item-name">Подводные грёзы</div>
+                                    <div class="item-price">5,99 €</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="shop-collabs">
+                        <div class="collab-item">
+                            <div class="collab-icon">🎨</div>
+                            <div class="collab-info">
+                                <div class="collab-name">Neon Graffiti</div>
+                                <button class="collab-btn">Перейти</button>
+                            </div>
+                        </div>
+                        <div class="collab-item">
+                            <div class="collab-icon">⚔️</div>
+                            <div class="collab-info">
+                                <div class="collab-name">Star Wars: The Mandalorian and Grogu</div>
+                                <button class="collab-btn">Перейти</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QUESTS VIEW -->
+            <div id="quests-view" class="content-view hidden">
+                <div class="view-header">
+                    <h2>Задания</h2>
+                </div>
+                <div class="quests-content">
+                    <div class="quest-item">
+                        <div class="quest-icon">📦</div>
+                        <div class="quest-info">
+                            <div class="quest-name">Купить Nitro</div>
+                            <div class="quest-desc">Получите Nitro за 500 звёзд</div>
+                            <button class="quest-btn" onclick="buyNitro()">Выполнить</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT SIDEBAR - USER PROFILE -->
+        <div class="right-sidebar" id="right-sidebar">
+            <div class="profile-header">
+                <div class="profile-avatar-large">
+                    <img src="https://via.placeholder.com/80/000000/FFFFFF?text=Mask" alt="avatar" id="profile-avatar-img">
+                </div>
+            </div>
+            
+            <div class="profile-info">
+                <div class="profile-name" id="profile-username">LMX_I</div>
+                <div class="profile-tag">Mafioso</div>
+            </div>
+            
+            <div class="activity-section">
+                <div class="activity-title">Активность</div>
+                <div class="activities-list" id="activities-list">
+                    <!-- Активности будут добавлены динамически -->
+                </div>
+            </div>
+            
+            <div class="voice-section" id="voice-section">
+                <div class="voice-header">🔊 Голосовая связь</div>
+                <div class="voice-user">
+                    <div class="voice-avatar">J</div>
+                    <div class="voice-info">
+                        <div class="voice-name">Jun</div>
+                        <div class="voice-timer">01:28:47</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHAT VIEW (hidden by default, shown when channel selected) -->
+        <div class="main-chat hidden" id="main-chat">
             <!-- TOP BAR -->
             <div class="top-bar">
                 <button id="menu-btn" class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>

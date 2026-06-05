@@ -8,6 +8,7 @@ let contextMenu = null;
 let replyToMessage = null;
 let editingMessageId = null;
 let typingTimeout = null;
+let currentView = 'friends';
 
 const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2346/2346-preview.mp3');
 notificationSound.volume = 0.5;
@@ -42,8 +43,32 @@ const els = {
     pinnedBar: document.getElementById('pinned-bar'),
     pinnedText: document.getElementById('pinned-text'),
     
-    adminModal: document.getElementById('admin-modal')
+    adminModal: document.getElementById('admin-modal'),
+    
+    friendsList: document.getElementById('friends-list'),
+    dmList: document.getElementById('dm-list'),
+    onlineCount: document.getElementById('online-count'),
+    friendsOnlineBadge: document.getElementById('friends-online-badge'),
+    shopBalance: document.getElementById('shop-balance'),
+    profileAvatar: document.getElementById('profile-avatar-img'),
+    profileUsername: document.getElementById('profile-username'),
+    activitiesList: document.getElementById('activities-list'),
+    mainChat: document.getElementById('main-chat')
 };
+
+// --- VIEW SWITCHING ---
+function switchView(view, element) {
+    currentView = view;
+    document.querySelectorAll('.nav-icon').forEach(icon => icon.classList.remove('active'));
+    if(element) element.classList.add('active');
+    
+    document.querySelectorAll('.content-view').forEach(v => v.classList.add('hidden'));
+    document.getElementById(`${view}-view`).classList.remove('hidden');
+    
+    if (view === 'friends') {
+        document.querySelector('.left-nav .nav-icon')?.classList.add('active');
+    }
+}
 
 // --- AUTH ---
 function toggleAuthMode() {
@@ -73,6 +98,8 @@ socket.on('login-success', user => {
     els.login.classList.add('hidden');
     updateUI(user);
     if(user.isAdmin) els.adminBtn.classList.remove('hidden');
+    els.shopBalance.innerText = user.stars;
+    updateProfile(user);
 });
 
 function updateUI(user) {
@@ -92,12 +119,57 @@ function updateUI(user) {
     }
 }
 
-socket.on('update-user', u => { currentUser = u; updateUI(u); });
+socket.on('update-user', u => { 
+    currentUser = u; 
+    updateUI(u);
+    els.shopBalance.innerText = u.stars;
+});
+
 socket.on('update-online', c => { 
     if(els.online) {
-        els.online.innerText = `(${c} ${c === 1 ? 'online' : 'online'})`; 
+        els.online.innerText = `(${c} ${c === 1 ? 'online' : 'online'})`;
+        els.onlineCount.innerText = c;
+        els.friendsOnlineBadge.innerText = c;
     }
 });
+
+// --- PROFILE ---
+function updateProfile(user) {
+    els.profileUsername.innerText = user.username;
+}
+
+// --- USERS/FRIENDS LIST ---
+socket.on('update-users', users => {
+    // Обновляем список друзей
+    if(els.friendsList) {
+        els.friendsList.innerHTML = '';
+        Object.keys(users).forEach(username => {
+            const u = users[username];
+            if(username === currentUser?.username) return;
+            
+            const div = document.createElement('div');
+            div.className = 'friend-item';
+            div.onclick = () => openDM(username);
+            
+            const statusClass = u.isOnline ? 'status-online' : 'status-idle';
+            const nitroBadge = u.isNitro ? ' ★' : '';
+            
+            div.innerHTML = `
+                <div class="friend-name">
+                    <span class="status-dot ${statusClass}"></span>
+                    ${escapeHtml(username)}${u.isAdmin ? ' [A]' : ''}${nitroBadge}
+                </div>
+                <div class="friend-status">${u.isOnline ? 'В сети' : 'Не в сети'}</div>
+            `;
+            els.friendsList.appendChild(div);
+        });
+    }
+});
+
+function openDM(username) {
+    // Переходим в глобальный чат как простой DM
+    switchChannel('global');
+}
 
 // --- CHANNELS ---
 function createChannelPrompt() {
@@ -118,7 +190,9 @@ socket.on('update-channels', channels => {
         `;
         els.chanList.appendChild(div);
     });
-    if(channels[currentChannelId]) els.chatTitle.innerText = channels[currentChannelId].name;
+    if(channels[currentChannelId]) {
+        document.getElementById('chat-title').innerText = channels[currentChannelId].name;
+    }
 });
 
 function switchChannel(id) {
@@ -126,6 +200,13 @@ function switchChannel(id) {
     currentChannelId = id;
     els.msgs.innerHTML = '';
     socket.emit('join-channel', id);
+    showChatView();
+}
+
+function showChatView() {
+    document.querySelectorAll('.content-view').forEach(v => v.classList.add('hidden'));
+    els.mainChat.classList.remove('hidden');
+    document.querySelector('.left-nav .nav-icon').classList.remove('active');
 }
 
 socket.on('set-active-channel', id => currentChannelId = id);
@@ -170,7 +251,7 @@ function renderMessage(msg, playSound = true) {
         const isMe = currentUser && msg.username === currentUser.username;
         div.className = `message ${isMe ? 'my-msg' : 'other-msg'}`;
         
-        div.oncontextmenu = (e) => showCtx(e, msg, isMe, currentUser.isAdmin);
+        div.oncontextmenu = (e) => showCtx(e, msg, isMe, currentUser?.isAdmin);
 
         let replyHtml = msg.replyTo ? `<div class="reply-quote">${escapeHtml(msg.replyTo.username)}: ${escapeHtml(msg.replyTo.text)}</div>` : '';
         let badges = '';
@@ -225,8 +306,8 @@ socket.on('update-pinned', msg => {
         els.pinnedBar.classList.add('hidden');
     }
 });
-function unpinMessage() { // Кнопка крестик на плашке (только для админа сработает на сервере)
-    if(currentUser.isAdmin && confirm('Открепить?')) socket.emit('unpin-message');
+function unpinMessage() { 
+    if(currentUser?.isAdmin && confirm('Открепить?')) socket.emit('unpin-message');
 }
 
 // --- CONTEXT MENU ---
@@ -245,9 +326,8 @@ function showCtx(e, msg, isMe, isAdmin) {
     if(isMe) addCtxItem('Изменить', () => startEdit(msg));
     if(isMe || isAdmin) addCtxItem('Удалить', () => { if(confirm('Удалить?')) socket.emit('delete-message', msg.id); }, true);
     
-    // Пин только для админа
     if(isAdmin) addCtxItem('📌 Закрепить', () => socket.emit('pin-message', msg.id));
-
+    
     document.body.appendChild(contextMenu);
 }
 
@@ -314,9 +394,21 @@ function toggleSidebar() {
     sidebar.classList.toggle('open');
 }
 
-// Закрываем меню, если кликнули по каналу (на мобиле)
-document.getElementById('channels-list').addEventListener('click', () => {
+document.getElementById('channels-list')?.addEventListener('click', () => {
     if (window.innerWidth <= 768) {
         sidebar.classList.remove('open');
     }
 });
+
+// --- FRIENDS SEARCH ---
+function searchFriends(query) {
+    const items = document.querySelectorAll('.dm-item, .friend-item');
+    items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        if(text.includes(query.toLowerCase())) {
+            item.style.display = '';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}

@@ -14,7 +14,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // === ПОДКЛЮЧЕНИЕ К MONGODB ===
 // Берем ссылку из переменных окружения (на Render) или используем локальную строку
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://OrangLaut:HWyWKxTP8pZGwzWT@mosickgram.jpqqle6.mongodb.net/?appName=Mosickgram';
+const MONGO_URI = process.env.MONGO_URI || '';
 
 mongoose.connect(MONGO_URI)
     .then(() => console.log('✅ MongoDB Connected'))
@@ -112,7 +112,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    async function loginUser(socket, user) {
+async function loginUser(socket, user) {
         activeSockets[socket.id] = user.username;
         socket.emit('login-success', user);
         
@@ -122,7 +122,10 @@ io.on('connection', (socket) => {
         const channelsData = {};
         channels.forEach(c => channelsData[c.channelId] = { name: c.name, desc: c.desc, pinnedId: c.pinnedMessageId });
         socket.emit('update-channels', channelsData);
-
+        
+        // Отправляем список пользователей
+        emitUsersList();
+        
         joinChannel(socket, 'global');
         io.emit('update-online', Object.keys(activeSockets).length);
     }
@@ -293,8 +296,24 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         delete activeSockets[socket.id];
         io.emit('update-online', Object.keys(activeSockets).length);
+        emitUsersList();
     });
 });
+
+// Отправка списка пользователей (друзей) всем клиентам
+async function emitUsersList() {
+    const users = await User.find({}, 'username color isNitro isAdmin');
+    const usersData = {};
+    users.forEach(u => {
+        usersData[u.username] = {
+            color: u.color,
+            isNitro: u.isNitro,
+            isAdmin: u.isAdmin,
+            isOnline: Object.values(activeSockets).includes(u.username)
+        };
+    });
+    io.emit('update-users', usersData);
+}
 
 // Форматирование для клиента (MongoDB использует _id, а клиент ждет id)
 function formatMsg(m) {
