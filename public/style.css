@@ -1,541 +1,519 @@
 :root {
-    --discord-dark: #131318;
-    --discord-darker: #0A0E17;
-    --discord-bg: #2C2F33;
-    --discord-blue: #5865F2;
-    --discord-blue-hover: #4752C4;
-    --discord-text: #F2F2F2;
-    --discord-text-muted: #B5BAC1;
-    --discord-text-muted-2: #949BA4;
-    --discord-hover: #383A40;
-    --discord-hover-alt: #3C3F45;
-    --discord-green: #43B581;
-    --discord-red: #ED4245;
-    --discord-blurple: #5865F2;
+    --bg-primary: #313338;
+    --bg-secondary: #2b2d31;
+    --bg-tertiary: #1e1f22;
+    --text-primary: #f2f2f2;
+    --text-secondary: #b5bac1;
+    --text-tertiary: #949ba4;
+    --blurple: #5865f2;
+    --green: #43b581;
+    --red: #ed4245;
+    --yellow: #f0a30a;
 }
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
 
 body {
-    background: #0F1419;
-    color: var(--discord-text);
+    background: #0f1419;
     height: 100vh;
     overflow: hidden;
     font-size: 15px;
-    line-height: 1.5;
 }
 
 .hidden {
     display: none !important;
 }
 
-/* === AUTH SCREEN === */
+/* AUTH SCREEN */
 .login-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, #1E1F22 0%, #111214 100%);
-    z-index: 99;
+    background: var(--bg-tertiary);
+    z-index: 100;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
 .login-box {
-    background: var(--discord-bg);
-    padding: 48px 40px;
-    border-radius: 12px;
-    text-align: center;
-    border: none;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8);
-    min-width: 360px;
-    animation: slideUp 0.5s ease-out;
+    background: var(--bg-primary);
+    padding: 40px;
+    border-radius: 8px;
+    width: 320px;
 }
 
 .login-box h2 {
-    margin-bottom: 24px;
-    font-size: 28px;
-    color: var(--discord-text);
-    font-weight: 800;
-    letter-spacing: -0.5px;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    font-weight: 600;
 }
 
 .login-box input {
-    display: block;
     width: 100%;
-    padding: 14px 16px;
-    margin: 14px 0;
-    background: var(--discord-darker);
-    border: 1px solid transparent;
-    color: var(--discord-text);
+    padding: 12px;
+    margin: 10px 0;
+    background: var(--bg-tertiary);
+    border: 1px solid #3b3d42;
+    color: var(--text-primary);
     border-radius: 4px;
-    outline: none;
-    transition: 0.2s;
-    font-size: 15px;
+    font-size: 14px;
 }
 
 .login-box input:focus {
-    border-color: var(--discord-blue);
-    background: var(--discord-bg);
-}
-
-.login-box button {
-    width: 100%;
-    padding: 14px;
-    margin-top: 12px;
-    background: var(--discord-blue);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 700;
-    font-size: 14px;
-    transition: 0.2s;
-    letter-spacing: -0.2px;
-}
-
-.login-box button:hover {
-    background: var(--discord-blue-hover);
-}
-
-#error-msg {
-    color: var(--discord-red);
-    font-size: 13px;
-    margin: 12px 0 8px 0;
-    min-height: 18px;
-    font-weight: 500;
-}
-
-#toggle-text {
-    margin-top: 16px;
-    cursor: pointer;
-    color: var(--discord-blue);
-    transition: 0.2s;
-    display: inline-block;
-    font-size: 14px;
-    font-weight: 500;
-}
-
-#toggle-text:hover {
-    color: var(--discord-text);
-}
-
-/* === MAIN LAYOUT === */
-.app-container {
-    display: flex;
-    height: 100vh;
-    background: var(--discord-dark);
-}
-
-/* LEFT NAVIGATION (DISCORD STYLE) */
-.left-nav {
-    width: 72px;
-    background: #1E1F22;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding-top: 16px;
-    gap: 12px;
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.nav-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    background: #35383E;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    cursor: pointer;
-    transition: 0.2s;
-    color: var(--discord-text-muted);
-}
-
-.nav-icon:hover,
-.nav-icon.active {
-    background: var(--discord-blue);
-    color: white;
-}
-
-/* LEFT SIDEBAR - FRIENDS */
-.sidebar {
-    width: 260px;
-    background: var(--discord-bg);
-    border-right: 1px solid rgba(255, 255, 255, 0.05);
-    display: flex;
-    flex-direction: column;
-    transition: 0.3s;
-    overflow-y: auto;
-}
-
-.friends-header {
-    padding: 12px 12px 8px;
-}
-
-.search-input {
-    width: 100%;
-    padding: 8px 12px;
-    background: var(--discord-darker);
-    border: none;
-    color: var(--discord-text);
-    border-radius: 6px;
-    font-size: 14px;
+    border-color: var(--blurple);
     outline: none;
 }
 
-.search-input::placeholder {
-    color: var(--discord-text-muted-2);
+#error-msg {
+    color: var(--red);
+    font-size: 13px;
+    height: 18px;
 }
 
-.online-counter-header {
-    margin-top: 8px;
-    font-size: 12px;
-    color: var(--discord-text-muted-2);
-    font-weight: 600;
-}
-
-.dm-section-title {
-    padding: 16px 12px 8px;
-    font-size: 12px;
-    color: var(--discord-text-muted-2);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.dm-list {
-    flex: 1;
-    overflow-y: auto;
-}
-
-.dm-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 12px;
+#toggle-text {
+    color: var(--blurple);
     cursor: pointer;
-    border-radius: 6px;
-    margin: 0 8px 4px;
-    transition: 0.15s;
-    color: var(--discord-text);
+    font-size: 13px;
+    margin-top: 10px;
+    display: inline-block;
 }
 
-.dm-item:hover {
-    background: var(--discord-hover);
+#toggle-text:hover {
+    text-decoration: underline;
 }
 
-.dm-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--discord-blue);
+/* MAIN APP LAYOUT */
+.app-container {
+    display: flex;
+    height: 100vh;
+}
+
+/* SERVER NAVIGATION */
+.server-nav {
+    width: 72px;
+    background: #1e1f22;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 0;
+    gap: 8px;
+    border-right: 1px solid #0c0d10;
+}
+
+.server-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    background: #313338;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 600;
-    font-size: 0.9rem;
-    flex-shrink: 0;
+    font-size: 22px;
+    cursor: pointer;
+    transition: 0.2s;
+    color: var(--text-secondary);
+}
+
+.server-icon:hover,
+.server-icon.active {
+    background: var(--blurple);
     color: white;
+    border-radius: 12px;
 }
 
-.dm-info {
-    flex: 1;
-    min-width: 0;
+/* CHANNELS SIDEBAR */
+.sidebar {
+    width: 240px;
+    background: var(--bg-secondary);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #0c0d10;
 }
 
-.dm-name {
-    font-size: 14px;
-    font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.guild-header {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #3b3d42;
 }
 
-.dm-tag {
+.guild-header h3 {
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.header-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.header-btn:hover {
+    color: var(--blurple);
+}
+
+.online-counter {
+    padding: 8px 16px;
     font-size: 12px;
-    color: var(--discord-text-muted-2);
+    color: var(--text-secondary);
+    font-weight: 500;
 }
 
-/* User panel at bottom */
-.user-panel-bottom {
-    padding: 8px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+.channels-section {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 8px;
+}
+
+.section-header {
+    padding: 8px 12px;
+    color: var(--text-tertiary);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+}
+
+.section-header:hover {
+    color: var(--text-secondary);
+}
+
+.dm-list,
+.friends-list {
+    padding-left: 8px;
+}
+
+.dm-item,
+.friend-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 8px;
+    margin: 2px 0;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.15s;
+    color: var(--text-secondary);
+}
+
+.dm-item:hover,
+.friend-item:hover {
+    background: #3b3d42;
+    color: var(--text-primary);
+}
+
+.dm-avatar,
+.friend-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--blurple);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 500;
+    color: white;
+    flex-shrink: 0;
+}
+
+.friend-item {
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.friend-name {
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.friend-activity {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 2px;
 }
 
 .user-panel {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 8px 10px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: 0.15s;
+    padding: 8px 12px;
+    background: #1e1f22;
+    border-top: 1px solid #3b3d42;
 }
 
-.user-panel:hover {
-    background: var(--discord-hover);
-}
-
-.user-avatar {
-    width: 36px;
-    height: 36px;
+.user-panel .user-avatar {
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--discord-blue), #4752C4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    cursor: pointer;
-    overflow: hidden;
-    font-size: 1.1rem;
-    color: white;
+    background: var(--blurple);
 }
 
-.user-status {
+.user-panel .user-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.user-panel .user-status {
     font-size: 12px;
-    color: var(--discord-green);
+    color: var(--green);
 }
 
 /* MAIN CONTENT */
 .main-content {
     flex: 1;
-    background: var(--discord-dark);
     display: flex;
     flex-direction: column;
+    background: var(--bg-primary);
 }
 
 .content-view {
     flex: 1;
-    overflow-y: auto;
-    padding: 0 20px 20px;
+    display: flex;
+    flex-direction: column;
 }
 
-.view-header {
-    padding: 20px 0 16px;
+.content-view.hidden {
+    display: none;
+}
+
+.content-header {
+    padding: 16px 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    margin-bottom: 16px;
+    border-bottom: 1px solid #3b3d42;
 }
 
-.view-header h2 {
+.content-header h2 {
+    color: var(--text-primary);
     font-size: 20px;
-    font-weight: 700;
-    color: var(--discord-text);
+    font-weight: 600;
 }
 
-.online-badge {
-    background: var(--discord-green);
+.badge {
+    background: var(--green);
     color: white;
-    padding: 2px 8px;
+    padding: 4px 8px;
     border-radius: 4px;
     font-size: 14px;
-    font-weight: 600;
 }
 
-.friends-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+/* FRIENDS VIEW */
+.friends-grid {
+    flex: 1;
+    padding: 16px 24px;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
 }
 
-.friend-item {
+.friend-card {
     display: flex;
-    flex-direction: column;
-    padding: 12px 16px;
-    background: var(--discord-hover-alt);
+    gap: 12px;
+    padding: 12px;
+    background: var(--bg-tertiary);
     border-radius: 8px;
     cursor: pointer;
-    transition: 0.15s;
 }
 
-.friend-item:hover {
-    background: var(--discord-hover);
+.friend-card:hover {
+    background: #3b3d42;
 }
 
-.friend-name {
-    font-weight: 600;
-    color: var(--discord-text);
+.friend-card-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--blurple);
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    font-weight: 600;
+    color: white;
 }
 
-.friend-status {
+.friend-card-info {
+    flex: 1;
+}
+
+.friend-card-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.friend-card-status {
     font-size: 13px;
-    color: var(--discord-text-muted-2);
-    margin-top: 4px;
+    color: var(--text-secondary);
+    margin-top: 2px;
 }
 
 .status-dot {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    display: inline-block;
 }
 
-.status-online {
-    background: var(--discord-green);
-}
+.status-online { background: var(--green); }
+.status-idle { background: var(--yellow); }
+.status-dnd { background: var(--red); }
 
-.status-idle {
-    background: #F0A30A;
-}
-
-.status-dnd {
-    background: var(--discord-red);
-}
-
-/* SHOP STYLES */
-.shop-tabs {
+/* NITRO VIEW */
+.nitro-content {
+    flex: 1;
+    padding: 24px;
     display: flex;
-    gap: 16px;
-    margin-top: 8px;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.nitro-hero {
+    text-align: center;
+    padding: 24px;
+    background: linear-gradient(135deg, #5865f2, #4752c4);
+    border-radius: 12px;
+    color: white;
+}
+
+.nitro-hero h3 {
+    font-size: 22px;
+    margin-bottom: 8px;
+}
+
+.nitro-btn {
+    background: var(--blurple);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.nitro-btn:hover {
+    background: #4752c4;
+}
+
+/* SHOP VIEW */
+.shop-tabs {
+    padding: 12px 24px;
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid #3b3d42;
 }
 
 .shop-tab {
     padding: 6px 12px;
-    background: var(--discord-hover);
-    border-radius: 6px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
     font-size: 13px;
     cursor: pointer;
-    color: var(--discord-text);
+    color: var(--text-secondary);
 }
 
 .shop-tab.active {
-    background: var(--discord-blue);
+    background: var(--blurple);
     color: white;
 }
 
 .shop-balance {
+    color: var(--text-secondary);
     font-size: 13px;
-    color: var(--discord-text-muted);
+    margin-left: auto;
 }
 
-.nitro-content,
-.quests-content {
-    padding: 20px;
-}
-
-.nitro-banner {
-    background: linear-gradient(135deg, var(--discord-blue), #4752C4);
+.shop-content {
+    flex: 1;
     padding: 24px;
+    overflow-y: auto;
+}
+
+.banner {
+    background: linear-gradient(135deg, #1e1f22, #313338);
+    padding: 32px;
     border-radius: 12px;
-    text-align: center;
-    margin-bottom: 20px;
-    font-size: 18px;
-    font-weight: 700;
-}
-
-.nitro-buy-btn {
-    background: var(--discord-blue);
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 6px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: 0.15s;
-}
-
-.nitro-buy-btn:hover {
-    background: var(--discord-blue-hover);
-}
-
-.shop-banner {
-    position: relative;
     margin-bottom: 24px;
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-.shop-banner img {
-    width: 100%;
-    height: 120px;
-    object-fit: cover;
-}
-
-.banner-text {
-    position: absolute;
-    bottom: 12px;
-    left: 12px;
+    text-align: center;
     color: white;
-    font-weight: 700;
-    font-size: 20px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    font-size: 18px;
 }
 
 .shop-section h3 {
-    font-size: 16px;
-    font-weight: 700;
-    margin-bottom: 12px;
-    color: var(--discord-text);
+    color: var(--text-primary);
+    margin-bottom: 16px;
 }
 
-.shop-items {
+.items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 32px;
+}
+
+.shop-card {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+}
+
+.card-icon {
+    font-size: 28px;
+}
+
+.card-name {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.card-price {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.sale {
+    color: var(--green);
+    margin-left: 6px;
+}
+
+.collab-section {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-}
-
-.shop-item {
-    display: flex;
     gap: 12px;
-    padding: 12px;
-    background: var(--discord-hover-alt);
-    border-radius: 8px;
 }
 
-.item-icon {
-    font-size: 24px;
-}
-
-.item-info {
-    flex: 1;
-}
-
-.item-name {
-    font-weight: 500;
-    color: var(--discord-text);
-}
-
-.item-price {
-    font-size: 13px;
-    color: var(--discord-text-muted);
-}
-
-.discount {
-    color: var(--discord-green);
-    margin-left: 8px;
-}
-
-.shop-collabs {
-    margin-top: 24px;
-}
-
-.collab-item {
+.collab-card {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 12px;
-    padding: 12px;
-    background: var(--discord-hover-alt);
+    padding: 16px;
+    background: var(--bg-tertiary);
     border-radius: 8px;
-    margin-bottom: 8px;
 }
 
 .collab-btn {
-    background: var(--discord-blue);
+    background: var(--blurple);
     color: white;
     border: none;
     padding: 6px 12px;
@@ -544,50 +522,176 @@ body {
     cursor: pointer;
 }
 
+/* QUESTS VIEW */
+.quests-content {
+    flex: 1;
+    padding: 24px;
+}
+
+.quest-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+}
+
+.quest-icon {
+    font-size: 28px;
+}
+
+/* CHAT VIEW */
+.chat-header {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #3b3d42;
+    background: var(--bg-secondary);
+}
+
+.chat-header h3 {
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.pinned-bar {
+    background: rgba(88, 101, 242, 0.15);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px;
+    border-radius: 4px;
+}
+
+.messages-area {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.message {
+    padding: 10px 12px;
+    margin: 4px 0;
+    border-radius: 8px;
+    max-width: 50%;
+}
+
+.my-msg {
+    align-self: flex-end;
+    background: var(--blurple);
+    color: white;
+    margin-left: auto;
+}
+
+.other-msg {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.meta {
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+/* INPUT AREA */
+.input-area {
+    padding: 16px;
+    display: flex;
+    gap: 10px;
+    background: var(--bg-secondary);
+    border-top: 1px solid #3b3d42;
+}
+
+.message-input {
+    flex: 1;
+    padding: 10px 14px;
+    background: var(--bg-primary);
+    border: 1px solid #3b3d42;
+    color: var(--text-primary);
+    border-radius: 6px;
+    outline: none;
+}
+
+.message-input:focus {
+    border-color: var(--blurple);
+}
+
+.attach-btn,
+.send-btn {
+    background: none;
+    border: none;
+    color: var(--blurple);
+    font-size: 18px;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 /* RIGHT SIDEBAR */
 .right-sidebar {
     width: 320px;
-    background: #1E1F22;
-    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    background: #1e1f22;
+    border-left: 1px solid #0c0d10;
     display: flex;
     flex-direction: column;
 }
 
 .profile-header {
+    position: relative;
     padding: 24px;
-    background: #0F1419;
-    display: flex;
-    justify-content: center;
+    text-align: center;
+    background: #0f1419;
 }
 
-.profile-avatar-large {
+.profile-avatar-wrap {
     width: 80px;
     height: 80px;
+    margin: 0 auto;
     border-radius: 50%;
     overflow: hidden;
     background: #000;
 }
 
-.profile-avatar-large img {
+.profile-avatar-wrap img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.profile-info {
-    padding: 16px 24px;
+.profile-status-dot {
+    position: absolute;
+    bottom: 26px;
+    right: 92px;
+    width: 20px;
+    height: 20px;
+    background: var(--green);
+    border: 4px solid #0f1419;
+    border-radius: 50%;
+}
+
+.profile-info-section {
+    padding: 20px 24px;
     text-align: center;
 }
 
 .profile-name {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--discord-text);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
 }
 
 .profile-tag {
+    color: var(--text-secondary);
     font-size: 14px;
-    color: var(--discord-text-muted);
 }
 
 .activity-section {
@@ -597,591 +701,123 @@ body {
 
 .activity-title {
     font-size: 12px;
-    color: var(--discord-text-muted);
-    font-weight: 700;
+    color: var(--text-tertiary);
+    font-weight: 600;
     text-transform: uppercase;
     margin-bottom: 12px;
 }
 
-.activities-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.activity-item {
-    display: flex;
-    gap: 12px;
-}
-
-.activity-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-    background: var(--discord-blue);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-}
-
-.activity-info {
-    flex: 1;
-}
-
-.activity-name {
-    font-weight: 600;
-    font-size: 14px;
-    color: var(--discord-text);
-}
-
-.activity-details {
-    font-size: 12px;
-    color: var(--discord-text-muted);
-}
-
 .voice-section {
-    padding: 12px 24px 24px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 16px 24px;
+    border-top: 1px solid #3b3d42;
 }
 
-.voice-header {
+.voice-title {
     font-size: 12px;
-    color: var(--discord-text-muted);
-    font-weight: 700;
+    color: var(--text-tertiary);
+    font-weight: 600;
     margin-bottom: 12px;
 }
 
 .voice-user {
     display: flex;
     align-items: center;
-    gap: 12px;
-}
-
-.voice-user .voice-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: var(--discord-blue);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: 12px;
-    color: white;
-}
-
-.voice-timer {
-    font-size: 12px;
-    color: var(--discord-text-muted);
-}
-
-/* === MESSAGES === */
-.main-chat {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    background: var(--discord-dark);
-    position: relative;
-}
-
-.top-bar {
-    padding: 14px 24px;
-    background: rgba(44, 47, 51, 0.5);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    height: 60px;
-    backdrop-filter: blur(10px);
-}
-
-.chat-header-info h3 {
-    font-size: 16px;
-    margin: 0;
-    font-weight: 700;
-    color: var(--discord-text);
-    letter-spacing: -0.3px;
-}
-
-#online-counter {
-    margin-left: 10px;
-    font-size: 0.8rem;
-    color: var(--discord-text-muted);
-    font-weight: 500;
-}
-
-.admin-btn {
-    background: none;
-    border: none;
-    color: var(--discord-text-muted);
-    font-size: 18px;
-    cursor: pointer;
-    transition: 0.15s;
-    padding: 6px 8px;
-    border-radius: 6px;
-}
-
-.admin-btn:hover {
-    color: var(--discord-blue);
-    background: var(--discord-hover);
-}
-
-.pinned-bar {
-    background: rgba(88, 101, 242, 0.08);
-    padding: 14px 20px;
-    border: 1px solid rgba(88, 101, 242, 0.2);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-    transition: 0.15s;
-    margin: 0 8px;
-}
-
-.pinned-bar:hover {
-    background: rgba(88, 101, 242, 0.15);
-}
-
-.pin-icon {
-    font-size: 1.1rem;
-}
-
-.pin-content {
-    flex: 1;
-    overflow: hidden;
-}
-
-.pin-title {
-    font-size: 12px;
-    color: var(--discord-blue);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.pin-text {
-    font-size: 14px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    color: var(--discord-text);
-    letter-spacing: -0.2px;
-}
-
-.pin-close {
-    cursor: pointer;
-    color: var(--discord-text-muted);
-    padding: 4px;
-    font-size: 1rem;
-    transition: 0.15s;
-}
-
-.pin-close:hover {
-    color: var(--discord-red);
-}
-
-.messages-area {
-    flex: 1;
-    padding: 24px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.message {
-    padding: 14px 16px;
-    border-radius: 8px;
-    max-width: 60%;
-    position: relative;
-    animation: fadeIn 0.2s ease-out;
-    word-wrap: break-word;
-    display: flex;
-    flex-direction: column;
-    font-size: 15px;
-    line-height: 1.5;
-}
-
-.my-msg {
-    align-self: flex-end;
-    background: linear-gradient(135deg, var(--discord-blue), #4752C4);
-    color: white;
-    border-radius: 16px;
-}
-
-.other-msg {
-    align-self: flex-start;
-    background: var(--discord-hover-alt);
-    color: var(--discord-text);
-    border-radius: 16px;
-}
-
-.system-msg {
-    align-self: center;
-    font-size: 0.8rem;
-    color: var(--discord-text-muted);
-    padding: 8px 12px;
-    background: transparent;
-    border-radius: 6px;
-}
-
-.meta {
-    display: flex;
-    gap: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    margin-bottom: 6px;
-    align-items: center;
-    opacity: 0.9;
-    letter-spacing: -0.2px;
-}
-
-.meta span {
-    color: var(--discord-text);
-}
-
-.my-msg .meta span {
-    color: rgba(255, 255, 255, 0.9);
-}
-
-.chat-image {
-    max-width: 100%;
-    border-radius: 6px;
-    margin-top: 8px;
-    cursor: pointer;
-    transition: 0.15s;
-}
-
-.chat-image:hover {
-    opacity: 0.8;
-}
-
-.reply-quote {
-    border-left: 3px solid rgba(255, 255, 255, 0.3);
-    background: rgba(0, 0, 0, 0.1);
-    padding: 6px 8px;
-    font-size: 0.8rem;
-    margin-bottom: 6px;
-    opacity: 0.85;
-    border-radius: 4px;
-}
-
-.my-msg .reply-quote {
-    border-left-color: rgba(255, 255, 255, 0.5);
-    background: rgba(255, 255, 255, 0.1);
-}
-
-.edited-mark {
-    font-size: 0.7em;
-    font-style: italic;
-    opacity: 0.6;
-    margin-top: 4px;
-}
-
-.text {
-    word-break: break-word;
-    line-height: 1.4;
-}
-
-/* === REPLY BAR === */
-.reply-bar {
-    background: rgba(88, 101, 242, 0.08);
-    padding: 10px 20px;
-    border-top: 1px solid rgba(88, 101, 242, 0.2);
-    display: flex;
-    justify-content: space-between;
-    color: var(--discord-text-muted);
-    font-size: 13px;
-    align-items: center;
-}
-
-.close-reply {
-    cursor: pointer;
-    color: #F04747;
-    font-weight: bold;
-    transition: 0.15s;
-    padding: 2px 6px;
-}
-
-.close-reply:hover {
-    color: var(--discord-red);
-}
-
-/* === INPUT AREA === */
-.input-area {
-    padding: 20px 24px;
-    background: transparent;
-    display: flex;
-    gap: 12px;
-    align-items: flex-end;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.message-input {
-    flex: 1;
-    padding: 12px 16px;
-    background: var(--discord-bg);
-    border: 1px solid transparent;
-    color: var(--discord-text);
-    border-radius: 24px;
-    outline: none;
-    transition: 0.15s;
-    font-size: 15px;
-    font-family: inherit;
-}
-
-.message-input:focus {
-    border-color: rgba(88, 101, 242, 0.5);
-    background: var(--discord-hover-alt);
-}
-
-.message-input::placeholder {
-    color: var(--discord-text-muted-2);
-}
-
-.send-btn,
-.attach-btn {
-    background: none;
-    border: none;
-    color: var(--discord-blue);
-    font-size: 18px;
-    cursor: pointer;
-    transition: 0.15s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 6px;
-    padding: 0;
-}
-
-.send-btn:hover,
-.attach-btn:hover {
-    background: var(--discord-hover);
-    color: var(--discord-blue-hover);
-}
-
-.typing-indicator {
-    position: absolute;
-    bottom: 70px;
-    left: 20px;
-    background: var(--discord-bg);
-    padding: 6px 10px;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    font-style: italic;
-    color: var(--discord-text-muted);
-    border: 1px solid var(--discord-darker);
-}
-
-/* === CONTEXT MENU === */
-.context-menu {
-    position: absolute;
-    background: var(--discord-bg);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    width: 168px;
-    border-radius: 8px;
-    z-index: 100;
-    overflow: hidden;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
-}
-
-.context-menu-item {
-    padding: 10px 14px;
-    cursor: pointer;
-    color: var(--discord-text);
-    font-size: 13px;
-    transition: 0.1s;
-    display: flex;
-    align-items: center;
     gap: 8px;
-    font-weight: 500;
+    color: var(--text-secondary);
+    font-size: 13px;
 }
 
-.context-menu-item:hover {
-    background: var(--discord-hover);
+.voice-avatar-small {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--blurple);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: white;
 }
 
-.context-menu-item.delete {
-    color: var(--discord-red);
-}
-
-.context-menu-item.delete:hover {
-    background: rgba(237, 66, 69, 0.1);
-}
-
-/* === MODAL === */
+/* MODAL */
 .modal {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.7);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 200;
-    backdrop-filter: blur(4px);
-    animation: fadeIn 0.15s ease-out;
 }
 
 .modal-content {
-    background: var(--discord-bg);
-    padding: 28px;
-    border-radius: 12px;
-    width: 100%;
-    max-width: 360px;
-    text-align: center;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8);
-    animation: slideUp 0.2s ease-out;
+    background: var(--bg-primary);
+    padding: 24px;
+    border-radius: 8px;
+    width: 320px;
 }
 
 .modal-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-}
-
-.modal-header h3 {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--discord-text);
-    letter-spacing: -0.3px;
-}
-
-.modal-header span {
-    cursor: pointer;
-    font-size: 1.4rem;
-    transition: 0.15s;
-    color: var(--discord-text-muted);
-}
-
-.modal-header span:hover {
-    color: #F04747;
+    margin-bottom: 20px;
 }
 
 .modal button {
     width: 100%;
-    padding: 12px;
-    margin-top: 12px;
+    padding: 10px;
+    margin: 6px 0;
+    background: var(--blurple);
+    color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-weight: 700;
-    background: var(--discord-blue);
-    color: white;
-    font-size: 14px;
-    transition: 0.15s;
-    letter-spacing: -0.2px;
 }
 
 .modal button:hover {
-    background: var(--discord-blue-hover);
+    background: #4752c4;
 }
 
-.modal button:active {
-    transform: scale(0.98);
-}
-
-/* === MOBILE === */
-.mobile-menu-btn {
-    display: none;
-    background: none;
-    border: none;
-    color: var(--discord-text);
-    font-size: 1.3rem;
-    margin-right: 12px;
-    cursor: pointer;
-    transition: 0.15s;
-    padding: 4px 8px;
-}
-
-.mobile-menu-btn:hover {
-    color: var(--discord-blue);
-}
-
+/* MOBILE */
 @media (max-width: 768px) {
-    .mobile-menu-btn {
-        display: flex;
-        align-items: center;
+    .right-sidebar {
+        position: absolute;
+        right: -100%;
+        top: 0;
+        height: 100%;
+        transition: 0.25s;
+        z-index: 99;
     }
-
-    .app-container {
-        position: relative;
-    }
-
+    
     .sidebar {
         position: absolute;
         left: -100%;
         top: 0;
         height: 100%;
-        width: 70%;
-        z-index: 999;
-        box-shadow: 4px 0 12px rgba(0, 0, 0, 0.6);
-        transition: 0.25s ease-out;
+        transition: 0.25s;
+        z-index: 99;
     }
-
-    .sidebar.open {
+    
+    .sidebar.open,
+    .right-sidebar.open {
         left: 0;
-    }
-
-    .message {
-        max-width: 85%;
-    }
-
-    .modal-content {
-        max-width: 90%;
-        margin: 20px;
+        right: 0;
     }
 }
 
-/* === SCROLLBAR === */
+/* SCROLLBAR */
 ::-webkit-scrollbar {
     width: 8px;
 }
 
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-
 ::-webkit-scrollbar-thumb {
-    background: var(--discord-hover-alt);
+    background: #3b3d42;
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--discord-blue);
-}
-
-/* === ANIMATIONS === */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(12px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Smooth scrolling */
-html {
-    scroll-behavior: smooth;
+    background: #5865f2;
 }

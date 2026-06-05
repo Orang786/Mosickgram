@@ -8,7 +8,6 @@ let contextMenu = null;
 let replyToMessage = null;
 let editingMessageId = null;
 let typingTimeout = null;
-let currentView = 'friends';
 
 const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2346/2346-preview.mp3');
 notificationSound.volume = 0.5;
@@ -52,22 +51,16 @@ const els = {
     shopBalance: document.getElementById('shop-balance'),
     profileAvatar: document.getElementById('profile-avatar-img'),
     profileUsername: document.getElementById('profile-username'),
-    activitiesList: document.getElementById('activities-list'),
-    mainChat: document.getElementById('main-chat')
+    friendsGrid: document.getElementById('friends-grid')
 };
 
 // --- VIEW SWITCHING ---
-function switchView(view, element) {
-    currentView = view;
-    document.querySelectorAll('.nav-icon').forEach(icon => icon.classList.remove('active'));
-    if(element) element.classList.add('active');
-    
+function switchView(view) {
+    document.querySelectorAll('.server-icon').forEach(icon => icon.classList.remove('active'));
     document.querySelectorAll('.content-view').forEach(v => v.classList.add('hidden'));
-    document.getElementById(`${view}-view`).classList.remove('hidden');
     
-    if (view === 'friends') {
-        document.querySelector('.left-nav .nav-icon')?.classList.add('active');
-    }
+    const targetView = document.getElementById(`${view}-view`);
+    if(targetView) targetView.classList.remove('hidden');
 }
 
 // --- AUTH ---
@@ -97,14 +90,15 @@ socket.on('login-success', user => {
     currentUser = user;
     els.login.classList.add('hidden');
     updateUI(user);
-    if(user.isAdmin) els.adminBtn.classList.remove('hidden');
-    els.shopBalance.innerText = user.stars;
-    updateProfile(user);
+    if(user.isAdmin) document.getElementById('admin-btn').classList.remove('hidden');
+    if(els.shopBalance) els.shopBalance.innerText = user.stars;
+    if(els.profileUsername) els.profileUsername.innerText = user.username;
 });
 
 function updateUI(user) {
+    if(!els.myUser) return;
     els.myUser.innerText = user.username + (user.isAdmin ? ' [A]' : '');
-    els.myBal.innerText = `⭐ ${user.stars}`;
+    if(els.myBal) els.myBal.innerText = `⭐ ${user.stars}`;
     if(user.avatarUrl) {
         els.myAv.innerHTML = `<img src="${user.avatarUrl}" alt="avatar">`;
         els.myAv.style.background = 'transparent';
@@ -112,35 +106,24 @@ function updateUI(user) {
         els.myAv.innerText = user.username[0].toUpperCase();
         els.myAv.style.background = user.color || '#5865F2';
     }
-    if(user.isNitro) {
-        els.myUser.style.color = '#5865F2';
-    } else {
-        els.myUser.style.removeProperty('color');
-    }
 }
 
 socket.on('update-user', u => { 
     currentUser = u; 
     updateUI(u);
-    els.shopBalance.innerText = u.stars;
+    if(els.shopBalance) els.shopBalance.innerText = u.stars;
 });
 
 socket.on('update-online', c => { 
     if(els.online) {
-        els.online.innerText = `(${c} ${c === 1 ? 'online' : 'online'})`;
-        els.onlineCount.innerText = c;
-        els.friendsOnlineBadge.innerText = c;
+        els.online.innerText = `(${c} ${c === 1 ? 'онлайн' : 'онлайн'})`;
     }
+    if(els.onlineCount) els.onlineCount.innerText = c;
+    if(els.friendsOnlineBadge) els.friendsOnlineBadge.innerText = c;
 });
-
-// --- PROFILE ---
-function updateProfile(user) {
-    els.profileUsername.innerText = user.username;
-}
 
 // --- USERS/FRIENDS LIST ---
 socket.on('update-users', users => {
-    // Обновляем список друзей
     if(els.friendsList) {
         els.friendsList.innerHTML = '';
         Object.keys(users).forEach(username => {
@@ -149,64 +132,74 @@ socket.on('update-users', users => {
             
             const div = document.createElement('div');
             div.className = 'friend-item';
-            div.onclick = () => openDM(username);
             
             const statusClass = u.isOnline ? 'status-online' : 'status-idle';
-            const nitroBadge = u.isNitro ? ' ★' : '';
             
             div.innerHTML = `
                 <div class="friend-name">
                     <span class="status-dot ${statusClass}"></span>
-                    ${escapeHtml(username)}${u.isAdmin ? ' [A]' : ''}${nitroBadge}
+                    ${escapeHtml(username)}${u.isAdmin ? ' [A]' : ''}${u.isNitro ? ' ★' : ''}
                 </div>
-                <div class="friend-status">${u.isOnline ? 'В сети' : 'Не в сети'}</div>
+                <div class="friend-activity">${u.isOnline ? 'В сети' : 'Не в сети'}</div>
             `;
             els.friendsList.appendChild(div);
         });
     }
+    
+    // Обновляем grid друзей
+    if(els.friendsGrid) {
+        els.friendsGrid.innerHTML = '';
+        Object.keys(users).forEach(username => {
+            if(username === currentUser?.username) return;
+            const u = users[username];
+            const card = document.createElement('div');
+            card.className = 'friend-card';
+            card.innerHTML = `
+                <div class="friend-card-avatar">${username[0]}</div>
+                <div class="friend-card-info">
+                    <div class="friend-card-name">${escapeHtml(username)}${u.isAdmin ? ' [A]' : ''}${u.isNitro ? ' ★' : ''}</div>
+                    <div class="friend-card-status">${u.isOnline ? 'В сети' : 'Не в сети'}</div>
+                </div>
+            `;
+            els.friendsGrid.appendChild(card);
+        });
+    }
 });
 
-function openDM(username) {
-    // Переходим в глобальный чат как простой DM
-    switchChannel('global');
-}
-
-// --- CHANNELS ---
+// --- CHANNELS & CHAT ---
 function createChannelPrompt() {
     const name = prompt("Название канала:");
     if(name) socket.emit('create-channel', name);
 }
 
+function openChat() {
+    document.querySelectorAll('.content-view').forEach(v => v.classList.add('hidden'));
+    document.getElementById('chat-view').classList.remove('hidden');
+}
+
 socket.on('update-channels', channels => {
-    els.chanList.innerHTML = '';
-    Object.keys(channels).forEach(id => {
-        const c = channels[id];
-        const div = document.createElement('div');
-        div.className = `chat-item ${id === currentChannelId ? 'active' : ''}`;
-        div.onclick = () => switchChannel(id);
-        div.innerHTML = `
-            <div class="avatar" style="font-size:0.75rem; background:#5865F2;">${c.name[0]}</div>
-            <div class="chat-info"><h4>${c.name}</h4></div>
-        `;
-        els.chanList.appendChild(div);
-    });
-    if(channels[currentChannelId]) {
-        document.getElementById('chat-title').innerText = channels[currentChannelId].name;
+    if(els.chanList) {
+        els.chanList.innerHTML = '';
+        Object.keys(channels).forEach(id => {
+            const c = channels[id];
+            const div = document.createElement('div');
+            div.className = 'chat-item';
+            div.onclick = () => switchChannel(id);
+            div.innerHTML = `
+                <div class="avatar" style="font-size:0.75rem; background:#5865F2;">${c.name[0]}</div>
+                <div class="chat-info"><h4>${c.name}</h4></div>
+            `;
+            els.chanList.appendChild(div);
+        });
     }
 });
 
 function switchChannel(id) {
     if(id === currentChannelId) return;
     currentChannelId = id;
-    els.msgs.innerHTML = '';
+    if(els.msgs) els.msgs.innerHTML = '';
     socket.emit('join-channel', id);
-    showChatView();
-}
-
-function showChatView() {
-    document.querySelectorAll('.content-view').forEach(v => v.classList.add('hidden'));
-    els.mainChat.classList.remove('hidden');
-    document.querySelector('.left-nav .nav-icon').classList.remove('active');
+    openChat();
 }
 
 socket.on('set-active-channel', id => currentChannelId = id);
@@ -231,11 +224,13 @@ els.input.addEventListener('input', () => socket.emit('typing'));
 
 socket.on('message', msg => renderMessage(msg));
 socket.on('load-messages', msgs => {
-    els.msgs.innerHTML = '';
-    msgs.forEach(m => renderMessage(m, false));
-    scrollToBottom();
+    if(els.msgs) {
+        els.msgs.innerHTML = '';
+        msgs.forEach(m => renderMessage(m, false));
+        scrollToBottom();
+    }
 });
-socket.on('clear-chat', () => els.msgs.innerHTML = '');
+socket.on('clear-chat', () => { if(els.msgs) els.msgs.innerHTML = ''; });
 
 function renderMessage(msg, playSound = true) {
     if(!msg || !msg.id) return;
@@ -278,10 +273,10 @@ function renderMessage(msg, playSound = true) {
     if(playSound) scrollToBottom();
 }
 
-function scrollToBottom() { els.msgs.scrollTop = els.msgs.scrollHeight; }
+function scrollToBottom() { if(els.msgs) els.msgs.scrollTop = els.msgs.scrollHeight; }
 function escapeHtml(text) { 
     if(!text) return '';
-    const map = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'};
+    const map = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'};
     return text.replace(/[&<>"']/g, m => map[m]);
 }
 
@@ -299,10 +294,10 @@ socket.on('message-deleted', id => { const el = document.getElementById(`msg-${i
 
 // --- PINNED MESSAGES ---
 socket.on('update-pinned', msg => {
-    if(msg) {
+    if(msg && els.pinnedBar) {
         els.pinnedBar.classList.remove('hidden');
         els.pinnedText.innerText = `${msg.username}: ${msg.text || '[Медиа]'}`;
-    } else {
+    } else if(els.pinnedBar) {
         els.pinnedBar.classList.add('hidden');
     }
 });
@@ -325,7 +320,6 @@ function showCtx(e, msg, isMe, isAdmin) {
     addCtxItem('Ответить', () => startReply(msg));
     if(isMe) addCtxItem('Изменить', () => startEdit(msg));
     if(isMe || isAdmin) addCtxItem('Удалить', () => { if(confirm('Удалить?')) socket.emit('delete-message', msg.id); }, true);
-    
     if(isAdmin) addCtxItem('📌 Закрепить', () => socket.emit('pin-message', msg.id));
     
     document.body.appendChild(contextMenu);
@@ -339,7 +333,7 @@ function addCtxItem(text, cb, isDel=false) {
     contextMenu.appendChild(i);
 }
 
-// --- UTILS ---
+// --- REPLY/EDIT ---
 function startReply(msg) {
     replyToMessage = { username: msg.username, text: msg.text || 'Медиа' };
     editingMessageId = null;
@@ -369,7 +363,7 @@ socket.on('display-typing', u => {
     typingTimeout = setTimeout(() => els.typing.classList.add('hidden'), 2000);
 });
 
-// ACTIONS
+// --- ACTIONS ---
 els.fileInput.onchange = function() {
     const f = this.files[0];
     if(f) {
@@ -379,36 +373,20 @@ els.fileInput.onchange = function() {
     }
     this.value = '';
 }
-els.myAv.onclick = () => { const u = prompt("URL:"); if(u) socket.emit('change-avatar', u); };
+els.myAv.onclick = () => { const u = prompt("URL аватара:"); if(u) socket.emit('change-avatar', u); };
 
 window.createChannelPrompt = createChannelPrompt;
-window.buyNitro = () => { if(confirm('Купить Nitro?')) socket.emit('buy-nitro'); };
-window.toggleAdmin = () => els.adminModal.classList.toggle('hidden');
-window.adminGetStars = () => { socket.emit('admin-give-stars'); alert('+1000'); };
-window.adminClearChat = () => { if(confirm('Очистить?')) socket.emit('admin-clear-chat'); };
+window.buyNitro = () => { if(confirm('Купить Nitro за 500 звёзд?')) socket.emit('buy-nitro'); };
+window.toggleAdmin = () => document.getElementById('admin-modal').classList.toggle('hidden');
+window.adminGetStars = () => { socket.emit('admin-give-stars'); alert('+1000 ⭐'); };
+window.adminClearChat = () => { if(confirm('Очистить весь чат?')) socket.emit('admin-clear-chat'); };
 
-// === МОБИЛЬНОЕ МЕНЮ ===
-const sidebar = document.querySelector('.sidebar');
-
+// --- MOBILE MENU ---
 function toggleSidebar() {
-    sidebar.classList.toggle('open');
+    document.querySelector('.sidebar')?.classList.toggle('open');
 }
 
-document.getElementById('channels-list')?.addEventListener('click', () => {
-    if (window.innerWidth <= 768) {
-        sidebar.classList.remove('open');
-    }
-});
-
-// --- FRIENDS SEARCH ---
-function searchFriends(query) {
-    const items = document.querySelectorAll('.dm-item, .friend-item');
-    items.forEach(item => {
-        const text = item.textContent.toLowerCase();
-        if(text.includes(query.toLowerCase())) {
-            item.style.display = '';
-        } else {
-            item.style.display = 'none';
-        }
-    });
+function toggleSection(id) {
+    const section = document.getElementById(id);
+    if(section) section.classList.toggle('hidden');
 }
