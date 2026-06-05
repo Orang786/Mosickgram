@@ -3,250 +3,198 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Mosikgram - современный Discord-подобный мессенджер">
-    <title>🎵 Mosikgram</title>
+    <title>Mosikgram</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- AUTH SCREEN -->
-    <div id="login-screen" class="login-overlay">
-        <div class="login-box">
-            <h2 id="auth-title">Добро пожаловать</h2>
-            <input type="text" id="username-input" placeholder="Никнейм" maxlength="15" autocomplete="off">
-            <input type="password" id="password-input" placeholder="Пароль" autocomplete="off">
-            <div id="error-msg"></div>
-            <button onclick="submitAuth()" id="submit-btn">Войти</button>
-            <p id="toggle-text" onclick="toggleAuthMode()">Создать аккаунт</p>
+    <!-- AUTH MODAL -->
+    <div class="auth-modal" id="auth-modal">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h2 id="auth-title">Добро пожаловать</h2>
+                <p class="auth-subtitle">Войдите, чтобы продолжить</p>
+            </div>
+            <div class="auth-form">
+                <input type="text" id="username-input" placeholder="Никнейм" maxlength="15" autocomplete="off">
+                <input type="password" id="password-input" placeholder="Пароль" autocomplete="off">
+                <div id="error-msg"></div>
+                <button id="submit-btn" onclick="submitAuth()">Войти</button>
+            </div>
+            <div class="auth-footer">
+                <span id="toggle-text" onclick="toggleAuthMode()">Создать аккаунт</span>
+            </div>
         </div>
     </div>
 
-    <!-- MAIN APP -->
-    <div class="app-container">
-        <!-- LEFT NAVIGATION (DISCORD STYLE - серверы) -->
-        <div class="server-nav">
-            <div class="server-icon active" title="Друзья">👥</div>
-            <div class="server-icon" title="Nitro" onclick="switchView('nitro')">✨</div>
-            <div class="server-icon" title="Магазин" onclick="switchView('shop')">🏪</div>
-            <div class="server-icon" title="Задания" onclick="switchView('quests')">📋</div>
-        </div>
+    <!-- APP CONTAINER -->
+    <div class="app" id="app">
+        <!-- SERVER LIST -->
+        <nav class="server-list">
+            <div class="server-icon active" title="Друзья">M</div>
+            <div class="server-icon" title="Nitro" onclick="switchView('nitro')">N</div>
+            <div class="server-icon" title="Магазин" onclick="switchView('shop')">S</div>
+        </nav>
 
-        <!-- CHANNELS SIDEBAR -->
-        <div class="sidebar">
-            <div class="guild-header">
+        <!-- CHANNEL LIST -->
+        <aside class="channel-sidebar">
+            <div class="channel-header">
                 <h3>Друзья</h3>
-                <button class="header-btn" onclick="alert('Поиск')">🔍</button>
+                <span class="online-badge" id="online-badge">0</span>
             </div>
-            
-            <div class="online-counter">В сети — <span id="online-count">0</span></div>
             
             <div class="channels-section">
-                <div class="section-header" onclick="toggleSection('dm')">ЛИЧНЫЕ СООБЩЕНИЯ ▾</div>
-                <div class="dm-list" id="dm-list">
-                    <!-- ДМ будут добавлены динамически -->
-                </div>
+                <div class="section-title">ЛИЧНЫЕ СООБЩЕНИЯ</div>
+                <div class="dm-list" id="dm-list"></div>
                 
-                <div class="section-header" onclick="toggleSection('friends')">ДРУЗЬЯ ОНЛАЙН</div>
-                <div class="friends-list" id="friends-list">
-                    <!-- Друзья будут добавлены динамически -->
-                </div>
+                <div class="section-title">ДРУЗЬЯ ОНЛАЙН <span id="online-count">(0)</span></div>
+                <div class="friends-list" id="friends-list"></div>
             </div>
             
-            <div class="user-panel">
+            <div class="user-bar" id="user-bar">
                 <div class="user-avatar" id="my-avatar">?</div>
                 <div class="user-info">
-                    <div id="my-username" class="user-name">Гость</div>
-                    <div class="user-status">Онлайн</div>
+                    <div class="user-name" id="my-username">Гость</div>
+                    <div class="user-balance" id="my-balance">⭐ 0</div>
                 </div>
+                <button class="nitro-btn-small" onclick="switchView('nitro')" title="Nitro">✨</button>
             </div>
-        </div>
+        </aside>
 
-        <!-- MAIN CONTENT AREA -->
-        <div class="main-content">
-            <!-- FRIENDS VIEW - список друзей -->
-            <div id="friends-view" class="content-view active">
-                <div class="content-header">
+        <!-- MAIN CONTENT -->
+        <main class="content">
+            <!-- FRIENDS VIEW -->
+            <section class="view active" id="friends-view">
+                <header class="view-header">
                     <h2>В сети</h2>
-                    <span class="badge" id="friends-online-badge">0</span>
-                </div>
-                
+                    <span class="view-badge" id="friends-online-badge">0</span>
+                </header>
                 <div class="friends-grid" id="friends-grid">
-                    <!-- Друзья с деталями -->
+                    <div class="empty-state">Загрузка друзей...</div>
                 </div>
-            </div>
+            </section>
 
             <!-- NITRO VIEW -->
-            <div id="nitro-view" class="content-view hidden">
-                <div class="content-header">
+            <section class="view hidden" id="nitro-view">
+                <header class="view-header">
                     <h2>Nitro</h2>
-                </div>
+                </header>
                 <div class="nitro-content">
                     <div class="nitro-hero">
-                        <h3>Разблокируйте новые возможности</h3>
-                        <p>Анимированные аватары, выше лимиты, особые эффекты и многое другое!</p>
+                        <h3>Разблокируйте всё</h3>
+                        <ul class="nitro-features">
+                            <li>🔥 Анимированные аватары</li>
+                            <li>🎨 Выше лимиты загрузок</li>
+                            <li>✨ Особые эффекты сообщений</li>
+                            <li>🎉 Эксклюзивные реакции</li>
+                        </ul>
+                        <button class="nitro-buy" onclick="buyNitro()">Купить за 500 ⭐</button>
                     </div>
-                    <button class="nitro-btn" onclick="buyNitro()">Купить Nitro (500 ⭐)</button>
                 </div>
-            </div>
+            </section>
 
             <!-- SHOP VIEW -->
-            <div id="shop-view" class="content-view hidden">
-                <div class="content-header">
-                    <h2>Магазин сервера</h2>
-                    <div class="shop-balance">Баланс: <span id="shop-balance">0</span> ⭐</div>
-                </div>
-                
+            <section class="view hidden" id="shop-view">
+                <header class="view-header">
+                    <h2>Магазин</h2>
+                    <span class="shop-balance">Баланс: <span id="shop-balance">0</span> ⭐</span>
+                </header>
                 <div class="shop-tabs">
-                    <span class="shop-tab active">Рекомендуемые товары</span>
-                    <span class="shop-tab">Просмотр ▾</span>
-                    <span class="shop-tab">Nitro</span>
-                    <span class="shop-tab">Игровые магазины ▾</span>
+                    <button class="shop-tab active">Рекомендуемые</button>
+                    <button class="shop-tab">Nitro</button>
+                    <button class="shop-tab">Эксклюзивное</button>
                 </div>
-                
-                <div class="shop-content">
-                    <div class="banner">
-                        🌙 Twilight Seas - Ночное небо с звёздами
-                    </div>
-                    
-                    <div class="shop-section">
-                        <h3>Коллекция Twilight Seas</h3>
-                        <div class="items-grid">
-                            <div class="shop-card">
-                                <div class="card-icon">🌊</div>
-                                <div class="card-name">Набор «Безмятежные волны...»</div>
-                                <div class="card-price">15,99 € <span class="sale">(-11%)</span></div>
-                            </div>
-                            <div class="shop-card">
-                                <div class="card-icon">⭐</div>
-                                <div class="card-name">Набор «Падающие звёзды...»</div>
-                                <div class="card-price">15,99 € <span class="sale">(-11%)</span></div>
-                            </div>
-                            <div class="shop-card">
-                                <div class="card-icon">🌙</div>
-                                <div class="card-name">Набор «Полуночные скаты...»</div>
-                                <div class="card-price">15,99 € <span class="sale">(-11%)</span></div>
-                            </div>
-                            <div class="shop-card">
-                                <div class="card-icon">💙</div>
-                                <div class="card-name">Подводные грёзы</div>
-                                <div class="card-price">5,99 €</div>
-                            </div>
+                <div class="shop-grid" id="shop-grid">
+                    <div class="shop-item">
+                        <div class="item-preview">🌊</div>
+                        <div class="item-info">
+                            <h4>Набор «Безмятежные волны»</h4>
+                            <div class="item-price">15,99 € <span class="sale">(-11%)</span></div>
                         </div>
                     </div>
-                    
-                    <div class="collab-section">
-                        <div class="collab-card">
-                            <span>🎨 Neon Graffiti</span>
-                            <button class="collab-btn">Перейти</button>
-                        </div>
-                        <div class="collab-card">
-                            <span>⚔️ Star Wars Collection</span>
-                            <button class="collab-btn">Перейти</button>
-                        </div>
-                        <div class="collab-card">
-                            <span>🦀 RUST Official Items</span>
-                            <button class="collab-btn">Игровой магазин ↗</button>
+                    <div class="shop-item">
+                        <div class="item-preview">⭐</div>
+                        <div class="item-info">
+                            <h4>Набор «Падающие звёзды»</h4>
+                            <div class="item-price">15,99 € <span class="sale">(-11%)</span></div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- QUESTS VIEW -->
-            <div id="quests-view" class="content-view hidden">
-                <div class="content-header">
-                    <h2>Задания</h2>
-                </div>
-                <div class="quests-content">
-                    <div class="quest-card">
-                        <div class="quest-icon">📦</div>
-                        <div class="quest-details">
-                            <div class="quest-title">Купить Nitro</div>
-                            <div class="quest-text">Получите премиум-статус за 500 звёзд</div>
-                        </div>
-                        <button onclick="buyNitro()">Выполнить</button>
-                    </div>
-                </div>
-            </div>
+            </section>
 
             <!-- CHAT VIEW -->
-            <div id="chat-view" class="content-view hidden">
-                <div class="chat-header">
+            <section class="view hidden" id="chat-view">
+                <header class="chat-header">
                     <h3 id="chat-title">Глобальный чат</h3>
                     <div class="chat-actions">
                         <span id="online-counter">(0 онлайн)</span>
-                        <button id="admin-btn" class="admin-btn hidden" onclick="toggleAdmin()" title="Админка">⚙️</button>
+                        <button class="admin-btn" id="admin-btn" onclick="toggleAdmin()" title="Админ">⚙️</button>
                     </div>
-                </div>
+                </header>
                 
-                <div id="pinned-bar" class="pinned-bar hidden">
+                <div class="pinned-bar hidden" id="pinned-bar">
                     <span class="pin-icon">📌</span>
                     <span id="pinned-text">Закреплено: ...</span>
-                    <span class="pin-close" onclick="unpinMessage()">✖</span>
+                    <button class="unpin-btn" onclick="unpinMessage()">✖</button>
                 </div>
                 
-                <div class="messages-area" id="messages-container"></div>
+                <div class="messages" id="messages-container"></div>
                 
-                <div id="reply-bar" class="reply-bar hidden">
-                    <span id="reply-info">Ответ на сообщение...</span>
-                    <span class="close-reply" onclick="cancelReply()">✖</span>
+                <div class="reply-bar hidden" id="reply-bar">
+                    <span id="reply-info">Ответ...</span>
+                    <button onclick="cancelReply()">✖</button>
                 </div>
                 
-                <div class="input-area">
-                    <input type="file" id="file-input" style="display:none" accept="image/*">
+                <div class="input-bar">
+                    <input type="file" id="file-input" accept="image/*" hidden>
                     <button class="attach-btn" onclick="document.getElementById('file-input').click()">📎</button>
-                    <input type="text" class="message-input" id="message-input" placeholder="Напишите сообщение...">
+                    <input type="text" id="message-input" placeholder="Напишите сообщение..." autocomplete="off">
                     <button class="send-btn" onclick="sendMessage()">➤</button>
                 </div>
                 
-                <div id="typing-indicator" class="typing-indicator hidden">✏️ печатает...</div>
-            </div>
-        </div>
+                <div class="typing-indicator hidden" id="typing-indicator">печатает...</div>
+            </section>
+        </main>
 
-        <!-- RIGHT SIDEBAR - PROFILE -->
-        <div class="right-sidebar" id="right-sidebar">
-            <div class="profile-header">
-                <div class="profile-avatar-wrap">
+        <!-- PROFILE PANEL -->
+        <aside class="profile-panel" id="profile-panel">
+            <div class="profile-banner"></div>
+            <div class="profile-info">
+                <div class="profile-avatar-large" id="profile-avatar">
                     <img src="" alt="avatar" id="profile-avatar-img">
                 </div>
-                <div class="profile-status-dot"></div>
+                <h3 id="profile-username">Пользователь</h3>
+                <span class="profile-tag">Mafioso</span>
             </div>
             
-            <div class="profile-info-section">
-                <div class="profile-name" id="profile-username">Пользователь</div>
-                <div class="profile-tag">#0001</div>
-            </div>
-            
-            <div class="activity-section">
-                <div class="activity-title">Активность</div>
-                <div class="activities-list" id="activities-list">
+            <div class="profile-section">
+                <h4>Активность</h4>
+                <div class="activity-list" id="activities-list">
                     <div class="activity-item">
-                        <div class="activity-icon">▶️</div>
-                        <div class="activity-info">
-                            <div>В сети</div>
-                            <div class="activity-time">Сейчас</div>
-                        </div>
+                        <span class="activity-status online"></span>
+                        <span>В сети</span>
                     </div>
                 </div>
             </div>
             
-            <div class="voice-section">
-                <div class="voice-title">Голосовой канал</div>
+            <div class="profile-section voice">
+                <h4>Голос</h4>
                 <div class="voice-user">
-                    <span class="voice-avatar-small">J</span>
+                    <span class="voice-avatar">J</span>
                     <span>Jun • 01:28:47</span>
                 </div>
             </div>
-        </div>
+        </aside>
     </div>
 
     <!-- ADMIN MODAL -->
     <div class="modal hidden" id="admin-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>🛡️ Админка</h3>
-                <span onclick="toggleAdmin()">✖</span>
+                <h3>Админ панель</h3>
+                <button onclick="toggleAdmin()">✖</button>
             </div>
-            <button onclick="adminGetStars()">💰 +1000 ⭐</button>
-            <button style="background:#F04747" onclick="adminClearChat()">🗑️ Очистить чат</button>
+            <button onclick="adminGetStars()">+1000 ⭐</button>
+            <button class="danger" onclick="adminClearChat()">Очистить чат</button>
         </div>
     </div>
 
