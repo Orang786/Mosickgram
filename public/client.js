@@ -6,12 +6,7 @@ let isRegisterMode = false;
 let contextMenu = null;
 let replyToMessage = null;
 let editingMessageId = null;
-let typingTimeout = null;
 
-const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2346/2346-preview.mp3');
-notificationSound.volume = 0.3;
-
-// DOM Elements
 const $ = id => document.getElementById(id);
 const els = {
     login: $('auth-modal'),
@@ -23,7 +18,7 @@ const els = {
     toggleText: $('toggle-text'),
     
     myUser: $('my-username'),
-    myBal: $('my-balance'),
+    myStars: $('my-stars'),
     myAv: $('my-avatar'),
     adminBtn: $('admin-btn'),
     
@@ -33,7 +28,6 @@ const els = {
     
     input: $('message-input'),
     fileInput: $('file-input'),
-    typing: $('typing-indicator'),
     
     replyBar: $('reply-bar'),
     replyInfo: $('reply-info'),
@@ -42,116 +36,78 @@ const els = {
     pinnedText: $('pinned-text'),
     
     adminModal: $('admin-modal'),
-    
-    friendsList: $('friends-list'),
-    dmList: $('dm-list'),
-    onlineBadge: $('online-badge'),
-    friendsOnlineBadge: $('friends-online-badge'),
-    shopBalance: $('shop-balance'),
-    friendsGrid: $('friends-grid'),
-    shopGrid: $('shop-grid')
+    chatList: $('chat-list'),
+    profileStars: $('profile-stars')
 };
 
 // View management
 function switchView(view) {
-    document.querySelectorAll('.server-icon').forEach(i => i.classList.remove('active'));
-    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-    $(`${view}-view`).classList.remove('hidden');
+    document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
+    els.chatList.querySelector('.chat-item')?.classList.add('active');
+}
+
+function openChat(channelId) {
+    currentChannelId = channelId;
+    if(els.chatTitle) els.chatTitle.textContent = 'Глобальный чат';
+    socket.emit('join-channel', channelId);
 }
 
 // Auth
 function toggleAuthMode() {
     isRegisterMode = !isRegisterMode;
-    els.error.innerText = '';
-    els.authTitle.innerText = isRegisterMode ? "Создание аккаунта" : "Добро пожаловать";
-    els.submitBtn.innerText = isRegisterMode ? "Создать" : "Войти";
-    els.toggleText.innerText = isRegisterMode ? "Уже есть аккаунт?" : "Нет аккаунта?";
+    els.error.textContent = '';
+    els.authTitle.textContent = isRegisterMode ? "Создание аккаунта" : "Telegram";
 }
 
 function submitAuth() {
-    const u = els.userInput.value.trim();
-    const p = els.passInput.value.trim();
-    if(!u || !p) return els.error.innerText = "Заполните все поля";
-    socket.emit('auth', { username: u, password: p, type: isRegisterMode ? 'register' : 'login' });
+    const username = els.userInput.value.trim();
+    const password = els.passInput.value.trim();
+    if(!username || !password) {
+        els.error.textContent = "Заполните все поля";
+        return;
+    }
+    socket.emit('auth', {
+        username: username,
+        password: password,
+        type: isRegisterMode ? 'register' : 'login'
+    });
 }
+
+socket.on('auth-error', msg => {
+    els.error.textContent = msg;
+    setTimeout(() => els.error.textContent = '', 4000);
+});
 
 socket.on('login-success', user => {
     currentUser = user;
     els.login.classList.add('hidden');
     updateUI(user);
     if(user.isAdmin) els.adminBtn.classList.remove('hidden');
-    if(els.shopBalance) els.shopBalance.innerText = user.stars;
 });
 
 function updateUI(user) {
-    els.myUser.textContent = user.username + (user.isAdmin ? ' [A]' : '');
-    els.myBal.textContent = `⭐ ${user.stars}`;
+    if(els.myUser) els.myUser.textContent = user.username;
+    if(els.myStars) els.myStars.textContent = `⭐ ${user.stars}`;
     if(user.avatarUrl) {
-        els.myAv.innerHTML = `<img src="${user.avatarUrl}" alt="avatar">`;
+        if(els.myAv) els.myAv.innerHTML = `<img src="${user.avatarUrl}" alt="avatar">`;
     } else {
-        els.myAv.textContent = user.username[0].toUpperCase();
-        els.myAv.style.background = user.color || '#5865F2';
+        if(els.myAv) {
+            els.myAv.textContent = user.username ? user.username[0].toUpperCase() : '?';
+            els.myAv.style.background = user.color || '#0088cc';
+        }
     }
 }
 
 socket.on('update-user', u => {
     currentUser = u;
     updateUI(u);
-    if(els.shopBalance) els.shopBalance.innerText = u.stars;
 });
 
 socket.on('update-online', c => {
-    els.online.textContent = `(${c} ${c === 1 ? 'онлайн' : 'онлайн'})`;
-    els.onlineBadge.textContent = c;
-    els.friendsOnlineBadge.textContent = c;
+    if(els.online) els.online.textContent = `(${c} онлайн)`;
 });
 
-// Friends/Users
-socket.on('update-users', users => {
-    renderFriendsList(users);
-    renderFriendsGrid(users);
-});
-
-function renderFriendsList(users) {
-    if(!els.friendsList) return;
-    els.friendsList.innerHTML = '';
-    
-    Object.keys(users).forEach(name => {
-        if(name === currentUser?.username) return;
-        const u = users[name];
-        
-        const div = document.createElement('div');
-        div.className = 'friend-item';
-        div.innerHTML = `
-            <div class="friend-avatar">${name[0]}</div>
-            <span class="friend-name">${escapeHtml(name)}${u.isAdmin ? ' [A]' : ''}${u.isNitro ? ' ★' : ''}</span>
-        `;
-        els.friendsList.appendChild(div);
-    });
-}
-
-function renderFriendsGrid(users) {
-    if(!els.friendsGrid) return;
-    els.friendsGrid.innerHTML = '';
-    
-    Object.keys(users).forEach(name => {
-        if(name === currentUser?.username) return;
-        const u = users[name];
-        
-        const card = document.createElement('div');
-        card.className = 'friend-card';
-        card.innerHTML = `
-            <div class="friend-card-avatar">${name[0]}</div>
-            <div class="friend-card-info">
-                <div class="friend-card-name">${escapeHtml(name)}<span class="nitro-star">${u.isNitro ? ' ★' : ''}</span></div>
-                <div class="friend-card-status">В сети</div>
-            </div>
-        `;
-        els.friendsGrid.appendChild(card);
-    });
-}
-
-// Chat
+// Messages
 function sendMessage() {
     const text = els.input.value.trim();
     if(!text) return;
@@ -160,55 +116,104 @@ function sendMessage() {
         socket.emit('edit-message', { id: editingMessageId, newText: text });
         cancelReply();
     } else {
-        socket.emit('send-message', { text, replyTo: replyToMessage, channelId: currentChannelId });
+        socket.emit('send-message', {
+            text: text,
+            replyTo: replyToMessage,
+            channelId: currentChannelId
+        });
     }
     els.input.value = '';
 }
 
-els.input?.addEventListener('keypress', e => e.key === 'Enter' && sendMessage());
-els.input?.addEventListener('input', () => socket.emit('typing'));
+els.input?.addEventListener('keypress', e => {
+    if(e.key === 'Enter') sendMessage();
+});
 
 socket.on('message', renderMessage);
 socket.on('load-messages', msgs => {
-    els.msgs.innerHTML = '';
-    msgs.forEach(m => renderMessage(m, false));
-    scrollToBottom();
+    if(els.msgs) {
+        els.msgs.innerHTML = '';
+        msgs.forEach(m => renderMessage(m, false));
+        scrollToBottom();
+    }
 });
 
-socket.on('clear-chat', () => els.msgs.innerHTML = '');
+socket.on('clear-chat', () => {
+    if(els.msgs) els.msgs.innerHTML = '';
+});
+
+socket.on('message-updated', d => {
+    const el = document.getElementById(`m-${d.id}`);
+    if(el) {
+        const textEl = el.querySelector('.message-text');
+        if(textEl) {
+            textEl.textContent = d.newText;
+            const edited = el.querySelector('.edited-mark');
+            if(!edited) {
+                textEl.insertAdjacentHTML('afterend', '<span class="edited-mark">(изм.)</span>');
+            }
+        }
+    }
+});
+
+socket.on('message-deleted', id => {
+    const el = document.getElementById(`m-${id}`);
+    if(el) el.remove();
+});
+
+socket.on('update-pinned', msg => {
+    if(els.pinnedBar && els.pinnedText) {
+        if(msg) {
+            els.pinnedBar.classList.remove('hidden');
+            els.pinnedText.textContent = `${msg.username}: ${msg.text || 'медиа'}`;
+        } else {
+            els.pinnedBar.classList.add('hidden');
+        }
+    }
+});
 
 function renderMessage(msg, playSound = true) {
-    if(!msg?.id || document.getElementById(`m-${msg.id}`)) return;
+    if(!msg || !msg.id) return;
+    if(document.getElementById(`m-${msg.id}`)) return;
     
     const div = document.createElement('div');
     div.id = `m-${msg.id}`;
-    div.className = msg.type === 'system' ? 'message system' : 
-        (msg.username === currentUser?.username ? 'message my-message' : 'message other-message');
+    div.className = msg.username === currentUser?.username ? 'message my-message' : 'message other-message';
     
     if(msg.type !== 'system') {
         div.oncontextmenu = e => showContextMenu(e, msg);
     }
     
-    const color = /^#[0-9A-Fa-f]{6}$/.test(msg.userColor) ? msg.userColor : '#ccc';
+    const color = /^#[0-9A-Fa-f]{6}$/.test(msg.userColor) ? msg.userColor : '#0088cc';
     const replyHtml = msg.replyTo ? 
         `<div class="reply-quote">Ответ: ${escapeHtml(msg.replyTo.username)}: ${escapeHtml(msg.replyTo.text)}</div>` : '';
     const badges = (msg.isAdmin ? ' [A]' : '') + (msg.isNitro ? ' ★' : '');
-    const edited = msg.isEdited ? '<span class="edited">(изм.)</span>' : '';
+    const edited = msg.isEdited ? '<span class="edited-mark">(изм.)</span>' : '';
     
-    div.innerHTML = msg.image 
-        ? `${replyHtml}<img src="${escapeHtml(msg.image)}" class="chat-img"> ${edited}`
-        : `${replyHtml}<div class="meta" style="color:${color}">${escapeHtml(msg.username)}${badges}</div>
-          <div class="text">${escapeHtml(msg.text || '')}</div>${edited}`;
+    div.innerHTML = `
+        <div class="message-header" style="color:${color}">${escapeHtml(msg.username)}${badges}</div>
+        ${replyHtml}
+        ${msg.image ? `<img src="${escapeHtml(msg.image)}" class="chat-img">` : `<div class="message-text">${escapeHtml(msg.text || '')}</div>`}
+        ${edited}
+    `;
     
-    els.msgs.appendChild(div);
+    if(els.msgs) els.msgs.appendChild(div);
     if(playSound) scrollToBottom();
 }
 
-function scrollToBottom() { els.msgs.scrollTop = els.msgs.scrollHeight; }
+function scrollToBottom() {
+    if(els.msgs) els.msgs.scrollTop = els.msgs.scrollHeight;
+}
 
 function escapeHtml(text) {
     if(!text) return '';
-    return text.replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
+    return String(text).replace(/[&<>'"]/g, c => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;'
+    })[c]);
 }
 
 // Context menu
@@ -222,6 +227,7 @@ function showContextMenu(e, msg) {
     contextMenu.style.top = e.clientY + 'px';
     
     const isMe = msg.username === currentUser?.username;
+    
     addMenuItem('Ответить', () => startReply(msg));
     if(isMe) addMenuItem('Редактировать', () => startEdit(msg));
     if(isMe || currentUser?.isAdmin) addMenuItem('Удалить', () => {
@@ -234,33 +240,39 @@ function showContextMenu(e, msg) {
 
 function addMenuItem(text, callback, isDanger = false) {
     const item = document.createElement('div');
-    item.className = `context-item ${isDanger ? 'danger' : ''}`;
+    item.className = 'context-item';
+    if(isDanger) item.classList.add('danger');
     item.textContent = text;
-    item.onclick = () => { callback(); contextMenu.remove(); };
-    contextMenu.appendChild(item);
+    item.onclick = () => {
+        callback();
+        if(contextMenu) contextMenu.remove();
+    };
+    if(contextMenu) contextMenu.appendChild(item);
 }
 
-document.onclick = () => contextMenu?.remove();
+document.onclick = () => {
+    if(contextMenu) contextMenu.remove();
+};
 
 function startReply(msg) {
     replyToMessage = { username: msg.username, text: msg.text || 'медиа' };
     editingMessageId = null;
-    els.replyBar.classList.remove('hidden');
-    els.replyInfo.textContent = `В ответ: ${msg.username}`;
+    if(els.replyBar) els.replyBar.classList.remove('hidden');
+    if(els.replyInfo) els.replyInfo.textContent = `Ответ: ${msg.username}`;
 }
 
 function startEdit(msg) {
     editingMessageId = msg.id;
     replyToMessage = null;
-    els.replyBar.classList.remove('hidden');
-    els.replyInfo.textContent = 'Редактирование';
+    if(els.replyBar) els.replyBar.classList.remove('hidden');
+    if(els.replyInfo) els.replyInfo.textContent = 'Редактирование';
     els.input.value = msg.text || '';
 }
 
 function cancelReply() {
     replyToMessage = null;
     editingMessageId = null;
-    els.replyBar.classList.add('hidden');
+    if(els.replyBar) els.replyBar.classList.add('hidden');
     els.input.value = '';
 }
 
@@ -269,11 +281,13 @@ els.fileInput?.addEventListener('change', e => {
     const file = e.target.files[0];
     if(file) {
         const reader = new FileReader();
-        reader.onload = ev => socket.emit('send-message', { 
-            text: '', 
-            image: ev.target.result, 
-            channelId: currentChannelId 
-        });
+        reader.onload = ev => {
+            socket.emit('send-message', {
+                text: '',
+                image: ev.target.result,
+                channelId: currentChannelId
+            });
+        };
         reader.readAsDataURL(file);
     }
     e.target.value = '';
@@ -286,11 +300,35 @@ els.myAv?.addEventListener('click', () => {
 
 // Window exports
 window.switchView = switchView;
-window.buyNitro = () => { if(confirm('Купить Nitro за 500 звёзд?')) socket.emit('buy-nitro'); };
-window.toggleAdmin = () => els.adminModal.classList.toggle('hidden');
-window.adminGetStars = () => { socket.emit('admin-give-stars'); alert('+1000 ⭐'); };
-window.adminClearChat = () => { if(confirm('Очистить чат?')) socket.emit('admin-clear-chat'); };
+window.buyNitro = () => {
+    if(confirm('Купить Nitro за 500 звёзд?')) {
+        socket.emit('buy-nitro');
+    }
+};
+window.toggleAdmin = () => {
+    if(els.adminModal) els.adminModal.classList.toggle('hidden');
+};
+window.adminGetStars = () => {
+    socket.emit('admin-give-stars');
+    alert('+1000 ⭐');
+};
+window.adminClearChat = () => {
+    if(confirm('Очистить чат?')) {
+        socket.emit('admin-clear-chat');
+    }
+};
 window.cancelReply = cancelReply;
-window.unpinMessage = () => { if(currentUser?.isAdmin && confirm('Открепить?')) socket.emit('unpin-message'); };
-window.toggleSidebar = () => document.querySelector('.channel-sidebar')?.classList.toggle('open');
-window.toggleProfile = () => document.querySelector('.profile-panel')?.classList.toggle('open');
+window.unpinMessage = () => {
+    if(currentUser?.isAdmin && confirm('Открепить?')) {
+        socket.emit('unpin-message');
+    }
+};
+window.toggleSidebar = () => {
+    document.getElementById('chat-sidebar')?.classList.toggle('open');
+};
+window.searchChats = query => {
+    document.querySelectorAll('.chat-item').forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(query.toLowerCase()) ? '' : 'none';
+    });
+};
