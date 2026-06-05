@@ -1,14 +1,16 @@
 :root {
-    --discord-dark: #1E1F22;
-    --discord-darker: #111214;
-    --discord-bg: #313338;
+    --discord-dark: #131318;
+    --discord-darker: #0A0E17;
+    --discord-bg: #2C2F33;
     --discord-blue: #5865F2;
     --discord-blue-hover: #4752C4;
-    --discord-text: #DBDEE1;
-    --discord-text-muted: #949BA4;
-    --discord-text-muted-2: #72767D;
-    --discord-hover: #2F3136;
-    --discord-hover-alt: #383A40;
+    --discord-text: #F2F2F2;
+    --discord-text-muted: #B5BAC1;
+    --discord-text-muted-2: #949BA4;
+    --discord-hover: #383A40;
+    --discord-hover-alt: #3C3F45;
+    --discord-green: #43B581;
+    --discord-red: #ED4245;
 }
 
 * {
@@ -19,10 +21,12 @@
 }
 
 body {
-    background: var(--discord-dark);
+    background: linear-gradient(135deg, #0F1419 0%, #131318 50%, #1A1D23 100%);
     color: var(--discord-text);
     height: 100vh;
     overflow: hidden;
+    font-size: 15px;
+    line-height: 1.5;
 }
 
 .hidden {
@@ -45,34 +49,35 @@ body {
 
 .login-box {
     background: var(--discord-bg);
-    padding: 40px;
-    border-radius: 16px;
+    padding: 48px 40px;
+    border-radius: 12px;
     text-align: center;
-    border: 1px solid var(--discord-hover);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
-    min-width: 320px;
+    border: none;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8);
+    min-width: 360px;
     animation: slideUp 0.5s ease-out;
 }
 
 .login-box h2 {
-    margin-bottom: 20px;
-    font-size: 1.8rem;
+    margin-bottom: 24px;
+    font-size: 28px;
     color: var(--discord-text);
-    font-weight: 700;
+    font-weight: 800;
+    letter-spacing: -0.5px;
 }
 
 .login-box input {
     display: block;
     width: 100%;
-    padding: 12px 14px;
-    margin: 12px 0;
+    padding: 14px 16px;
+    margin: 14px 0;
     background: var(--discord-darker);
-    border: 1px solid rgba(148, 155, 164, 0.3);
+    border: 1px solid transparent;
     color: var(--discord-text);
-    border-radius: 8px;
+    border-radius: 4px;
     outline: none;
     transition: 0.2s;
-    font-size: 1rem;
+    font-size: 15px;
 }
 
 .login-box input:focus {
@@ -82,16 +87,17 @@ body {
 
 .login-box button {
     width: 100%;
-    padding: 12px;
-    margin-top: 10px;
+    padding: 14px;
+    margin-top: 12px;
     background: var(--discord-blue);
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 4px;
     cursor: pointer;
-    font-weight: 600;
-    font-size: 1rem;
+    font-weight: 700;
+    font-size: 14px;
     transition: 0.2s;
+    letter-spacing: -0.2px;
 }
 
 .login-box button:hover {
@@ -99,19 +105,21 @@ body {
 }
 
 #error-msg {
-    color: #F04747;
-    font-size: 0.9rem;
-    margin: 10px 0;
-    min-height: 20px;
+    color: var(--discord-red);
+    font-size: 13px;
+    margin: 12px 0 8px 0;
+    min-height: 18px;
+    font-weight: 500;
 }
 
 #toggle-text {
-    margin-top: 15px;
+    margin-top: 16px;
     cursor: pointer;
-    color: var(--discord-text-muted);
+    color: var(--discord-blue);
     transition: 0.2s;
     display: inline-block;
-    font-size: 0.9rem;
+    font-size: 14px;
+    font-weight: 500;
 }
 
 #toggle-text:hover {
@@ -126,13 +134,14 @@ body {
 }
 
 .sidebar {
-    width: 240px;
+    width: 260px;
     background: var(--discord-bg);
-    border-right: 1px solid var(--discord-darker);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
     display: flex;
     flex-direction: column;
     transition: 0.3s;
     overflow-y: auto;
+    padding-top: 8px;
 }
 
 .main-chat {
@@ -145,8 +154,8 @@ body {
 
 /* === SIDEBAR === */
 .header {
-    padding: 16px 12px;
-    border-bottom: 1px solid var(--discord-darker);
+    padding: 12px 8px;
+    border-bottom: none;
 }
 
 .user-profile {
@@ -157,6 +166,7 @@ body {
     padding: 8px 10px;
     border-radius: 8px;
     transition: 0.15s;
+    margin: 0 4px 8px 4px;
 }
 
 .user-profile:hover {
@@ -164,10 +174,10 @@ body {
 }
 
 .avatar {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
-    background: var(--discord-blue);
+    background: linear-gradient(135deg, var(--discord-blue), #4752C4);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -176,8 +186,9 @@ body {
     overflow: hidden;
     position: relative;
     flex-shrink: 0;
-    font-size: 0.9rem;
+    font-size: 1.1rem;
     color: white;
+    box-shadow: 0 4px 12px rgba(88, 101, 242, 0.3);
 }
 
 .avatar img {
@@ -196,12 +207,14 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-size: 0.9rem;
+    font-size: 13px;
+    letter-spacing: -0.3px;
 }
 
 #my-username {
     font-weight: 600;
     color: var(--discord-text);
+    font-size: 14px;
 }
 
 .balance {
@@ -210,17 +223,17 @@ body {
 }
 
 .create-chan-btn {
-    width: 100%;
-    margin-top: 12px;
-    padding: 8px 12px;
+    width: calc(100% - 16px);
+    margin: 12px 8px 0 8px;
+    padding: 10px 14px;
     background: transparent;
-    border: 1px solid var(--discord-text-muted-2);
+    border: 1px solid transparent;
     color: var(--discord-text-muted);
     cursor: pointer;
     border-radius: 6px;
     transition: 0.15s;
     font-weight: 500;
-    font-size: 0.875rem;
+    font-size: 14px;
 }
 
 .create-chan-btn:hover {
@@ -232,20 +245,22 @@ body {
 .chat-list {
     flex: 1;
     overflow-y: auto;
-    padding: 8px 8px;
+    padding: 8px 0;
 }
 
 .chat-item {
-    padding: 8px 10px;
+    padding: 10px 12px;
     display: flex;
-    gap: 10px;
+    gap: 12px;
     cursor: pointer;
     align-items: center;
     border-radius: 6px;
-    margin: 2px 0;
+    margin: 4px 8px;
     transition: 0.15s;
     position: relative;
     color: var(--discord-text-muted);
+    font-size: 15px;
+    font-weight: 500;
 }
 
 .chat-item:hover {
@@ -259,10 +274,10 @@ body {
 }
 
 .chat-item .avatar {
-    width: 32px;
-    height: 32px;
-    font-size: 0.75rem;
-    background: var(--discord-hover-alt);
+    width: 36px;
+    height: 36px;
+    font-size: 0.85rem;
+    background: linear-gradient(135deg, var(--discord-hover-alt), var(--discord-hover));
     border-radius: 50%;
     font-weight: 600;
 }
@@ -274,25 +289,27 @@ body {
 }
 
 .chat-info h4 {
-    font-size: 0.875rem;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    letter-spacing: -0.2px;
 }
 
 .nitro-btn {
     width: calc(100% - 16px);
-    padding: 10px 12px;
+    padding: 12px 14px;
     margin: 12px 8px;
-    background: var(--discord-blue);
+    background: linear-gradient(135deg, var(--discord-blue), #4752C4);
     border: none;
     color: white;
     border-radius: 6px;
     cursor: pointer;
     font-weight: 600;
-    font-size: 0.875rem;
-    transition: 0.15s;
+    font-size: 14px;
+    transition: 0.2s;
+    text-align: center;
 }
 
 .nitro-btn:hover {
@@ -301,20 +318,22 @@ body {
 
 /* === CHAT AREA === */
 .top-bar {
-    padding: 12px 20px;
-    background: var(--discord-bg);
+    padding: 14px 24px;
+    background: rgba(44, 47, 51, 0.5);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid var(--discord-darker);
-    height: 56px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    height: 60px;
+    backdrop-filter: blur(10px);
 }
 
 .chat-header-info h3 {
-    font-size: 1rem;
+    font-size: 16px;
     margin: 0;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--discord-text);
+    letter-spacing: -0.3px;
 }
 
 #online-counter {
@@ -328,38 +347,39 @@ body {
     background: none;
     border: none;
     color: var(--discord-text-muted);
-    font-size: 1.1rem;
+    font-size: 18px;
     cursor: pointer;
     transition: 0.15s;
-    padding: 6px;
+    padding: 6px 8px;
     border-radius: 6px;
 }
 
 .admin-btn:hover {
-    color: var(--discord-text);
+    color: var(--discord-blue);
     background: var(--discord-hover);
 }
 
 .messages-area {
     flex: 1;
-    padding: 20px;
+    padding: 24px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
 }
 
 /* === PINNED MESSAGES === */
 .pinned-bar {
-    background: rgba(88, 101, 242, 0.1);
-    padding: 12px 16px;
-    border: 1px solid rgba(88, 101, 242, 0.3);
-    border-radius: 6px;
+    background: rgba(88, 101, 242, 0.08);
+    padding: 14px 20px;
+    border: 1px solid rgba(88, 101, 242, 0.2);
+    border-radius: 8px;
     display: flex;
     align-items: center;
     gap: 12px;
     cursor: pointer;
     transition: 0.15s;
+    margin: 0 8px;
 }
 
 .pinned-bar:hover {
@@ -376,18 +396,20 @@ body {
 }
 
 .pin-title {
-    font-size: 0.75rem;
+    font-size: 12px;
     color: var(--discord-blue);
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .pin-text {
-    font-size: 0.9rem;
+    font-size: 14px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     color: var(--discord-text);
+    letter-spacing: -0.2px;
 }
 
 .pin-close {
@@ -399,31 +421,35 @@ body {
 }
 
 .pin-close:hover {
-    color: #F04747;
+    color: var(--discord-red);
 }
 
 /* === MESSAGES === */
 .message {
-    padding: 12px 14px;
+    padding: 14px 16px;
     border-radius: 8px;
-    max-width: 70%;
+    max-width: 60%;
     position: relative;
     animation: fadeIn 0.2s ease-out;
     word-wrap: break-word;
     display: flex;
     flex-direction: column;
+    font-size: 15px;
+    line-height: 1.5;
 }
 
 .my-msg {
     align-self: flex-end;
-    background: var(--discord-blue);
+    background: linear-gradient(135deg, var(--discord-blue), #4752C4);
     color: white;
+    border-radius: 16px;
 }
 
 .other-msg {
     align-self: flex-start;
-    background: var(--discord-hover);
+    background: var(--discord-hover-alt);
     color: var(--discord-text);
+    border-radius: 16px;
 }
 
 .system-msg {
@@ -438,11 +464,12 @@ body {
 .meta {
     display: flex;
     gap: 6px;
-    font-size: 0.8rem;
+    font-size: 12px;
     font-weight: 600;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
     align-items: center;
     opacity: 0.9;
+    letter-spacing: -0.2px;
 }
 
 .meta span {
@@ -494,13 +521,13 @@ body {
 
 /* === REPLY BAR === */
 .reply-bar {
-    background: rgba(88, 101, 242, 0.1);
-    padding: 8px 16px;
-    border-top: 1px solid rgba(88, 101, 242, 0.3);
+    background: rgba(88, 101, 242, 0.08);
+    padding: 10px 20px;
+    border-top: 1px solid rgba(88, 101, 242, 0.2);
     display: flex;
     justify-content: space-between;
     color: var(--discord-text-muted);
-    font-size: 0.85rem;
+    font-size: 13px;
     align-items: center;
 }
 
@@ -513,29 +540,29 @@ body {
 }
 
 .close-reply:hover {
-    transform: scale(1.15);
+    color: var(--discord-red);
 }
 
 /* === INPUT AREA === */
 .input-area {
-    padding: 16px 20px;
-    background: var(--discord-dark);
+    padding: 20px 24px;
+    background: transparent;
     display: flex;
-    gap: 10px;
+    gap: 12px;
     align-items: flex-end;
-    border-top: 1px solid var(--discord-bg);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .message-input {
     flex: 1;
-    padding: 11px 14px;
+    padding: 12px 16px;
     background: var(--discord-bg);
-    border: 1px solid var(--discord-darker);
+    border: 1px solid transparent;
     color: var(--discord-text);
-    border-radius: 20px;
+    border-radius: 24px;
     outline: none;
     transition: 0.15s;
-    font-size: 0.95rem;
+    font-size: 15px;
     font-family: inherit;
 }
 
@@ -553,14 +580,14 @@ body {
     background: none;
     border: none;
     color: var(--discord-blue);
-    font-size: 1.3rem;
+    font-size: 18px;
     cursor: pointer;
     transition: 0.15s;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border-radius: 6px;
     padding: 0;
 }
@@ -588,23 +615,24 @@ body {
 .context-menu {
     position: absolute;
     background: var(--discord-bg);
-    border: 1px solid var(--discord-darker);
-    width: 160px;
-    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    width: 168px;
+    border-radius: 8px;
     z-index: 100;
     overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
 }
 
 .context-menu-item {
-    padding: 10px 12px;
+    padding: 10px 14px;
     cursor: pointer;
     color: var(--discord-text);
-    font-size: 0.85rem;
+    font-size: 13px;
     transition: 0.1s;
     display: flex;
     align-items: center;
     gap: 8px;
+    font-weight: 500;
 }
 
 .context-menu-item:hover {
@@ -612,11 +640,11 @@ body {
 }
 
 .context-menu-item.delete {
-    color: #F04747;
+    color: var(--discord-red);
 }
 
 .context-menu-item.delete:hover {
-    background: rgba(240, 71, 71, 0.1);
+    background: rgba(237, 66, 69, 0.1);
 }
 
 /* === MODAL === */
@@ -626,24 +654,24 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(0, 0, 0, 0.8);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 200;
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(4px);
     animation: fadeIn 0.15s ease-out;
 }
 
 .modal-content {
     background: var(--discord-bg);
-    padding: 24px;
+    padding: 28px;
     border-radius: 12px;
     width: 100%;
-    max-width: 320px;
+    max-width: 360px;
     text-align: center;
-    border: 1px solid var(--discord-darker);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8);
     animation: slideUp 0.2s ease-out;
 }
 
@@ -656,9 +684,10 @@ body {
 
 .modal-header h3 {
     margin: 0;
-    font-size: 1.2rem;
-    font-weight: 600;
+    font-size: 18px;
+    font-weight: 700;
     color: var(--discord-text);
+    letter-spacing: -0.3px;
 }
 
 .modal-header span {
@@ -674,16 +703,17 @@ body {
 
 .modal button {
     width: 100%;
-    padding: 10px;
-    margin-top: 10px;
+    padding: 12px;
+    margin-top: 12px;
     border: none;
-    border-radius: 6px;
+    border-radius: 4px;
     cursor: pointer;
-    font-weight: 600;
+    font-weight: 700;
     background: var(--discord-blue);
     color: white;
-    font-size: 0.9rem;
+    font-size: 14px;
     transition: 0.15s;
+    letter-spacing: -0.2px;
 }
 
 .modal button:hover {
@@ -777,7 +807,7 @@ body {
 @keyframes slideUp {
     from {
         opacity: 0;
-        transform: translateY(8px);
+        transform: translateY(12px);
     }
     to {
         opacity: 1;
